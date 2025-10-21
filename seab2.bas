@@ -1,4 +1,5 @@
 #lang "qb"
+' Original Code from: Ahl - More Basic Computer Games
 CLS: COLOR 12
 PRINT TAB(37); "Seabat"
 PRINT TAB(31); "Creative Computing"
@@ -29,22 +30,26 @@ REM
 REM   The real name of this program is, "Underwater Pie Lob"
 REM *** PROGRAM FOLLOWS ***
 REM ***
-DIM A(20, 20), DM(9), B(5)
+
+DIM SHARED A(20, 20), DM(9), B(5)
+DIM SHARED I,J,X,Y,S,S1,S2,S3,S4,X1,X2 AS INTEGER
+
 COLOR 10: PRINT "Do you want instructions (Y/N)";
 INPUT A$: COLOR 15
-IF LEFT$(A$, 1) = "Y" OR LEFT$(A$, 1) = "y" THEN CALL SubInst
+IF UCASE$(LEFT$(A$, 1)) = "Y" THEN CALL SubInst
+
 COLOR 10: PRINT "What is your name";
 INPUT N$: COLOR 15
 PRINT
 
-310 REM *** SET UP AREA ***
+REM *** SET UP AREA ***
 FOR I = 1 TO 20
 FOR J = 1 TO 20
 	A(I, J) = 0
 NEXT J
 NEXT I
 
-REM *** ISLAND ***
+REM *** ISLAND 1***
 RESTORE 6300
 FOR X = 7 TO 13
 FOR Y = 7 TO 12
@@ -52,72 +57,107 @@ FOR Y = 7 TO 12
 NEXT Y
 NEXT X
 
-REM *** SUB ***
+REM *** SUB 2***
 S1 = 10: S2 = 10
 A(S1, S2) = 2
 
-REM *** ENEMY SHIPS ***
+REM *** ENEMY SHIPS 3***
 S = INT(RND(1) * 16) + 15
 RESTORE 6090
 FOR X = 1 TO (INT(RND(1) * 4) + 1) * 2 - 1
 	READ D8, D9
 NEXT X
+
 FOR X = 1 TO S
-500	X1 = INT(RND(1) * 20) + 1
-	X2 = INT(RND(1) * 20) + 1
-	IF A(X1, X2) <> 0 THEN 500
+	DO
+		X1 = INT(RND(1) * 20) + 1
+		X2 = INT(RND(1) * 20) + 1
+	LOOP UNTIL A(X1, X2) = 0
 	A(X1, X2) = 3
 NEXT X
 
-550 PRINT "You must destroy"; S; "enemy ships to win, "; N$; "."
-560 REM *** HEADQUARTERS ***
-570 S3 = INT(RND(1) * 20) + 1
-580 S4 = INT(RND(1) * 20) + 1
-590 IF A(S3, S4) <> 0 THEN 570
-600 A(S3, S4) = 4
+PRINT "You must destroy"; S; " enemy ships to win, "; N$; "."
 
-610 REM *** UNDERWATER MINES ***
-620 FOR X = 1 TO INT(RND(1) * 8) + 8
-630 X1 = INT(RND(1) * 20) + 1
-640 X2 = INT(RND(1) * 20) + 1
-650 IF A(X1, X2) <> 0 THEN 630
-660 A(X1, X2) = 5
-670 NEXT X
+REM *** HEADQUARTERS 4***
+DO
+	S3 = INT(RND(1) * 20) + 1
+	S4 = INT(RND(1) * 20) + 1
+LOOP UNTIL A(S3, S4) = 0
+A(S3, S4) = 4
 
-680 REM *** SEA MONSTERS ***
-690 FOR X = 1 TO 4
-700 X1 = INT(RND(1) * 18) + 2
-710 X2 = INT(RND(1) * 18) + 2
-720 IF A(X1, X2) <> 0 THEN 700
-730 A(X1, X2) = 6
-740 RESTORE 6090
-750 FOR Y = 1 TO INT(RND(1) * 8) + 1
-760 READ M1, M2
-770 NEXT Y
-780 NEXT X
+REM *** UNDERWATER MINES 5***
+FOR X = 1 TO INT(RND(1) * 8) + 8
+	DO
+		X1 = INT(RND(1) * 20) + 1
+		X2 = INT(RND(1) * 20) + 1
+	LOOP UNTIL A(X1, X2) = 0
+	A(X1, X2) = 5
+NEXT X
 
-790 REM *** SET STARTING VALUES ***
-800 FOR I = 1 TO 9
-802 DM(I) = 0
-804 NEXT I
-810 C = 30
-820 P = 6000
-830 F = 2500
-840 T = 10
-850 M = 3
-860 D = 1000
-870 D2 = 2
+REM *** SEA MONSTERS 6***
+FOR X = 1 TO 4
+	DO
+		X1 = INT(RND(1) * 18) + 2
+		X2 = INT(RND(1) * 18) + 2
+	LOOP UNTIL A(X1, X2) = 0
 
+	A(X1, X2) = 6
+	RESTORE 6090
+	FOR Y = 1 TO INT(RND(1) * 8) + 1
+		READ M1, M2
+	NEXT Y
+NEXT X
+
+REM *** SET STARTING VALUES ***
+FOR I = 1 TO 9
+	DM(I) = 0
+NEXT I
+DIM SHARED C,P.F,T,M,D,D2 AS INTEGER
+C = 30
+P = 6000
+F = 2500
+T = 10
+M = 3
+D = 1000
+D2 = 2
+
+'Main Loop
 880 REM *** COMMAND SECTION ***
-890 PRINT: COLOR 10: PRINT "What are your orders, "; N$;
-900 INPUT O: COLOR 15
-910 ON INT(O + 1) GOTO 1040, 1680, 2220, 2680, 3250, 3410, 3700, 3880, 4400, 4660
+PRINT: COLOR 10: PRINT "What are your orders (1-9), "; N$;
+INPUT O: COLOR 15
+
+SELECT CASE O
+	CASE 0
+	 GOTO 1040
+	CASE 1
+	 GOTO 1680
+	CASE 2
+	 GOTO 2220
+	CASE 3
+	 GOTO 2680
+	CASE 4
+	 GOTO 3250
+	CAsE 5
+	 GOTO 3410
+	CASE 6
+	 GOTO 3700
+	CASE 7
+	 GOTO 3880
+	CASE 8
+	 GOTO 4400
+	CASE 9
+	 GOTO 4660
+CASE ELSE
+
+'ON INT(O + 1) GOTO 1040, 1680, 2220, 2680, 3250, 3410, 3700, 3880, 4400, 4660
 920 PRINT "The commands are:"
 930 COLOR 11: PRINT "     #0: Navigation", , "#5: Status/damage report"
 940 PRINT "     #1: Sonar", , "#6: Headquarters"
 950 PRINT "     #2: Torpedo control", , "#7: Sabotage"
 960 PRINT "     #3: Polaris missile control", "#8: Power conversion"
 970 PRINT "     #4: Maneuvering", , "#9: Surrender": COLOR 15
+END SELECT
+
 1030 GOTO 880
 
 1040 REM *** #0: NAVIGATION ***
@@ -136,7 +176,7 @@ NEXT X
 1170 IF RND(1) < .43 THEN 1210
 1180 PRINT "Your atomic pile went supercriticial, "; N$; "!  Headquarters will warn all"
 1190 PRINT "subs to stay from the radioactive area!"
-1200 GOTO 6180
+1200 CALL Lose
 1210 X = S1
 1220 Y = S2
 1230 Q1 = 1
@@ -158,16 +198,16 @@ NEXT X
 1390 IF D > 50 THEN 1290
 1400 PRINT "You rammed a ship!  You're both sunk, "; N$; "!"
 1410 S = S - 1
-1420 IF S = 0 THEN 6260
-1430 GOTO 6180
+1420 IF S = 0 THEN CALL Win
+1430 CALL Lose
 1440 IF D > 50 THEN 1290
 1450 PRINT "You rammed your headquarters!  You're sunk!"
-1460 GOTO 6180
+1460 CALL Lose
 1470 PRINT "You've been blown up by a mine, "; N$; "!"
-1480 GOTO 6180
+1480 CALL Lose
 1490 IF RND(1) < .21 THEN 1630
 1500 PRINT "You were eaten by a sea monster, "; N$; "!"
-1510 GOTO 6180
+1510 CALL Lose
 
 1520 REM *** CHECK FOR NEARBY SEA MONSTERS ***
 1530 FOR X3 = X - 2 TO X + 2
@@ -184,7 +224,7 @@ NEXT X
 1640 PRINT "Navigation complete.  Power left:"; P
 1650 IF P > 0 THEN 1340
 1660 PRINT "The atomic pile has gone dead!  Sub sinks, crew suffocates."
-1670 GOTO 6180
+1670 CALL Lose
 
 1680 REM *** #1: SONAR ***
 1690 IF DM(2) >= 0 THEN 1720
@@ -198,29 +238,66 @@ NEXT X
 1770 ON INT(O + 1) GOTO 1790, 2010
 1780 GOTO 1750
 
+
+SUB Map
+PRINT
+FOR X = 1 TO 20
+FOR Y = 1 TO 20
+CO = A(X,Y)
+'land & sub always visible
+IF D < 50 AND RND(1) < .23 AND A(X,Y) > 2 THEN CO = 8
+IF D>50 AND RND(1) < .15 AND A(X,Y) > 2 THEN CO = 8
+
+IF (X=1 OR X=20 OR Y=1 OR Y=20) AND CO=0 THEN CO=8
+SELECT CASE CO
+CASE 0
+	PRINT "   ";
+CASE 1
+	COLOR 14: PRINT "***";
+CASE 2
+	COLOR 11: PRINT "(X)";
+CASE 3
+	COLOR 12 : PRINT "\S/";
+CASE 4
+	COLOR 12 : PRINT "!H!";
+CASE 5
+	COLOR 13 : PRINT " $ ";
+CASE 6
+	COLOR 12 : PRINT "-#-";
+
+CASE 8
+	COLOR 9: PRINT " . ";: COLOR 15
+END SELECT
+NEXT Y
+PRINT
+NEXT X
+COLOR 15
+END SUB 'Map
+
 1790 REM *** PRINT OUT MAP ***
-1800 PRINT
-1810 FOR X = 1 TO 20
-1820 FOR Y = 1 TO 20
-1830 DATA "   ","***","(X)","\S/","!H!"," $ ","-#-"
-1840 IF A(X, Y) <> 0 THEN 1880
-1850 IF X <> 1 AND X <> 20 AND Y <> 1 AND Y <> 20 THEN 1880
-1860 COLOR 9: PRINT " . ";: COLOR 15
-1870 GOTO 1950
-1880 RESTORE 1830
-1890 FOR X1 = 1 TO A(X, Y) + 1
-1900 READ A$
-1910 NEXT X1
-1920 IF D < 50 AND RND(1) < .23 AND A(X, Y) <> 1 AND A(X, Y) <> 2 THEN 1860
-1930 IF RND(1) < .15 AND A(X, Y) > 2 THEN 1860
-1940 IF A(X, Y) = 1 THEN COLOR 14
-1942 IF A(X, Y) = 2 THEN COLOR 11
-1944 IF A(X, Y) = 3 OR A(X, Y) = 4 OR A(X, Y) = 6 THEN COLOR 12
-1946 IF A(X, Y) = 5 THEN COLOR 13
-1948 PRINT A$;
-1950 NEXT Y
-1960 PRINT
-1970 NEXT X: COLOR 15
+'1800 PRINT
+'1810 FOR X = 1 TO 20
+'1820 FOR Y = 1 TO 20
+'1830 DATA "   ","***","(X)","\S/","!H!"," $ ","-#-"
+'1840 IF A(X, Y) <> 0 THEN 1880
+'1850 IF X <> 1 AND X <> 20 AND Y <> 1 AND Y <> 20 THEN 1880
+'1860 COLOR 9: PRINT " . ";: COLOR 15
+'1870 GOTO 1950
+'1880 RESTORE 1830
+'1890 FOR X1 = 1 TO A(X, Y) + 1
+'1900 READ A$
+'1910 NEXT X1
+'1920 IF D < 50 AND RND(1) < .23 AND A(X, Y) <> 1 AND A(X, Y) <> 2 THEN 1860
+'1930 IF RND(1) < .15 AND A(X, Y) > 2 THEN 1860
+'1940 IF A(X, Y) = 1 THEN COLOR 14
+'1942 IF A(X, Y) = 2 THEN COLOR 11
+'1944 IF A(X, Y) = 3 OR A(X, Y) = 4 OR A(X, Y) = 6 THEN COLOR 12
+'1946 IF A(X, Y) = 5 THEN COLOR 13
+'1948 PRINT A$;
+'1950 NEXT Y
+'1960 PRINT
+'1970 NEXT X: COLOR 15
+CALL Map
 1980 P = P - 50
 1990 IF P > 0 THEN 880
 2000 GOTO 1660
@@ -229,7 +306,7 @@ NEXT X
 2020 FOR I = 1 TO 5
 2022 B(I) = 0
 2024 NEXT I
-2030 PRINT: "Direction   # of Ships     Distances": COLOR 11
+2030 PRINT "Direction   # of Ships     Distances": COLOR 11
 2040 RESTORE 6090
 2050 FOR X = 1 TO 8
 2060 READ X1, Y1
@@ -262,7 +339,7 @@ NEXT X
 2320 IF D < 2000 THEN 2360
 2330 IF RND(1) > .5 THEN 2360
 2340 PRINT "Pressure implodes the sub upon firing... you're crushed!"
-2350 GOTO 6180
+2350 CALL Lose
 2360 GOSUB 6080
 2370 X = S1
 2380 Y = S2
@@ -286,7 +363,7 @@ BEEP
 2540 PRINT "Ouch!  You got one, "; N$; "!"
 2550 S = S - 1
 2560 IF S <> 0 THEN 2520
-2570 GOTO 6260
+2570 CALL Win
 2580 PRINT "You blew up your headquarters, "; N$; "!"
 2590 S3 = 0: S4 = 0: D2 = 0
 2600 GOTO 2520
@@ -314,7 +391,7 @@ BEEP
 2810 IF LEFT$(A$, 1) = "N" OR LEFT$(A$, 1) = "n" THEN 880
 2820 IF RND(1) < .5 THEN 2850
 2830 PRINT "The missile explodes upon firing, "; N$; "!  You're dead!"
-2840 GOTO 6180
+2840 CALL Lose
 2850 GOSUB 6080
 2860 COLOR 10: PRINT "How much fuel (lbs.)";
 2870 INPUT F1: COLOR 15
@@ -342,7 +419,7 @@ BEEP
 3090 GOTO 3130
 3100 IF A(X, Y) <> 2 THEN 3130
 3110 PRINT "You just destroyed yourself, "; N$; "!  Dummy!"
-3120 GOTO 6180
+3120 CALL Lose
 3130 A(X, Y) = 0
 3140 NEXT Y
 3150 NEXT X
@@ -367,7 +444,7 @@ BEEP
 3330 INPUT D1: COLOR 15
 3340 IF D1 >= 0 AND D1 < 3000 THEN 3370
 3350 PRINT "Hull crushed by pressure, "; N$; "!"
-3360 GOTO 6180
+3360 CALL Lose
 3370 P = P - INT(ABS((D - D1) / 2 + .5))
 3380 PRINT "Maneuver complete.  Power loss: "; INT(ABS((D - D1) / 2 + .5))
 3390 D = D1
@@ -459,7 +536,7 @@ BEEP
 4180 D6 = D6 + 1
 4190 A(X, Y) = 0
 4200 S = S - 1
-4210 IF S = 0 THEN 6260
+4210 IF S = 0 THEN CALL Win
 4220 NEXT Y
 4230 NEXT X
 4240 PRINT D6; "ships were destroyed, "; N$; "."
@@ -510,7 +587,7 @@ BEEP
 
 4660 REM *** #9: SURRENDER ***
 4670 PRINT "Coward!  You're not very patriotic, "; N$; "!"
-4680 GOTO 6180
+4680 CALL Lose
 
 4690 REM *** RETALIATION SECTION ***
 4700 Q = 0
@@ -564,13 +641,13 @@ BEEP
 5170 PRINT "Fast work, "; N$; "!  Help arrives in time to save you!"
 5180 GOTO 5040
 5190 PRINT "Message garbled, "; N$; "... no help arrives!"
-5200 GOTO 6180
+5200 CALL Lose
 
 5210 REM *** MOVE SHIPS / SEA MONSTERS ***
 5220 IF DM(1) >= 0 OR DM(3) >= 0 OR DM(4) >= 0 OR DM(5) >= 0 OR DM(7) >= 0 THEN 5260
 5230 IF DM(8) >= 0 OR DM(9) >= 0 THEN 5260
 5240 PRINT "Damage too much, "; N$; "!  You're sunk!"
-5250 GOTO 6180
+5250 CALL Lose
 
 5260 REM *** MOVE SHIPS / SEA MONSTERS ***
 5270 PRINT: PRINT "---*** Result of Last Enemy Maneuver **---"
@@ -605,7 +682,7 @@ BEEP
 
 5530 IF D > 50 THEN 5460
 5540 COLOR 12: PRINT "*** You've been rammed by a ship, "; N$; "!": COLOR 15
-5550 GOTO 6180
+5550 CALL Lose
 
 5560 IF RND(1) < .15 THEN 5460
 5570 COLOR 12: PRINT "*** Your headquarters was rammed, "; N$; "!": COLOR 15
@@ -616,7 +693,7 @@ BEEP
 5610 COLOR 12: PRINT "*** Ship destroyed by a mine, "; N$; "!": COLOR 15
 5620 S = S - 1
 5630 IF S <> 0 THEN 5440
-5640 GOTO 6260
+5640 CALL Win
 
 5650 IF RND(1) < .8 THEN 5460
 5660 COLOR 12: PRINT "*** Ship eaten by a sea monster, "; N$; "!": COLOR 15
@@ -639,12 +716,12 @@ BEEP
 5810 IF X + M1 < 1 OR X + M1 > 20 OR Y + M2 < 1 OR Y + M2 > 20 THEN 5760
 5820 GOTO 5720
 5830 COLOR 12: PRINT "*** You've been eaten by a sea monster, "; N$; "!": COLOR 15
-5840 GOTO 6180
+5840 CALL Lose
 5850 IF RND(1) > .2 THEN 5760
 5860 COLOR 12: PRINT "*** Ship eaten by a sea monster, "; N$; "!": COLOR 15
 5870 S = S - 1
 5880 IF S <> 0 THEN 5730
-5890 GOTO 6260
+5890 CALL Win
 5900 COLOR 12: PRINT "*** A sea monster ate your headquarters, "; N$; "!": COLOR 15
 5910 S3 = 0: S4 = 0: D2 = 0
 5920 GOTO 5730
@@ -676,19 +753,28 @@ BEEP
 6150 READ X1, Y1
 6160 NEXT X9
 6170 RETURN
+
 'Lose
-6180 REM *** DESTROYED ? ***
-6190 PRINT "There are still"; S; "enemy ships left, "; N$; "."
-6200 PRINT "You will be demoted to the rank of deck scrubber!"
-6210 COLOR 10: PRINT "Want another game (Y/N)";
-6220 INPUT A$: COLOR 15
-6230 IF LEFT$(A$, 1) <> "Y" AND LEFT$(A$, 1) <> "y" THEN 6250
-6240 GOTO 310
-6250 STOP
+SUB Lose
+REM *** DESTROYED ? ***
+PRINT "There are still"; S; " enemy ships left, "; N$; "."
+PRINT "You will be demoted to the rank of deck scrubber!"
+WL=1
+END
+END SUB 'Lose
+'6210 COLOR 10: PRINT "Want another game (Y/N)";
+'6220 INPUT A$: COLOR 15
+'6230 IF LEFT$(A$, 1) <> "Y" AND LEFT$(A$, 1) <> "y" THEN 6250
+'6240 GOTO 310
+'6250 STOP
 'Win
-6260 PRINT "Good work, "; N$; "!  You got them all!!!"
-6270 PRINT "Promotions and commendations will be given immediately!"
-6280 GOTO 6210
+SUB Win
+PRINT "Good work, "; N$; "!  You got them all!!!"
+PRINT "Promotions and commendations will be given immediately!"
+WL=2
+END
+END SUB 'Win
+'6280 GOTO 6210
 
 6290 REM *** ISLAND DATA ***
 6300 DATA 0,1,1,1,0,0,0,1,1,1,1,0,1,1,1,0,1,1,1,1,0,0,0,1
