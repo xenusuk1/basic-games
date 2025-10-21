@@ -34,6 +34,8 @@ REM ***
 DIM SHARED A(20, 20), DM(9), B(5)
 DIM SHARED I,J,X,Y,S,S1,S2,S3,S4,X1,X2 AS INTEGER
 
+
+
 COLOR 10: PRINT "Do you want instructions (Y/N)";
 INPUT A$: COLOR 15
 IF UCASE$(LEFT$(A$, 1)) = "Y" THEN CALL SubInst
@@ -112,7 +114,7 @@ REM *** SET STARTING VALUES ***
 FOR I = 1 TO 9
 	DM(I) = 0
 NEXT I
-DIM SHARED C,P.F,T,M,D,D2 AS INTEGER
+DIM SHARED C,P,F,T,M,D,D2,W,V AS INTEGER
 C = 30
 P = 6000
 F = 2500
@@ -148,25 +150,54 @@ SELECT CASE O
 	CASE 9
 	 GOTO 4660
 CASE ELSE
-
 'ON INT(O + 1) GOTO 1040, 1680, 2220, 2680, 3250, 3410, 3700, 3880, 4400, 4660
-920 PRINT "The commands are:"
-930 COLOR 11: PRINT "     #0: Navigation", , "#5: Status/damage report"
-940 PRINT "     #1: Sonar", , "#6: Headquarters"
-950 PRINT "     #2: Torpedo control", , "#7: Sabotage"
-960 PRINT "     #3: Polaris missile control", "#8: Power conversion"
-970 PRINT "     #4: Maneuvering", , "#9: Surrender": COLOR 15
+	PRINT "The commands are:"
+	COLOR 11: PRINT "     #0: Navigation", , "#5: Status/damage report"
+	PRINT "     #1: Sonar", , "#6: Headquarters"
+	PRINT "     #2: Torpedo control", , "#7: Sabotage"
+	PRINT "     #3: Polaris missile control", "#8: Power conversion"
+	PRINT "     #4: Maneuvering", , "#9: Surrender": COLOR 15
 END SELECT
 
 1030 GOTO 880
 
+FUNCTION SubStatusCheck (SC%, CR%) AS INTEGER
+subStatusCheck = 1
+
+IF DM(SC%) < 0 THEN
+	subStatusCheck = 0
+	SELECT CASE SC%
+	CASE 1
+		PRINT "Engines are under repair, "; N$; "."
+	CASE 2
+		PRINT "The sonar is under repair "; N$;"."
+	CASE 3
+		PRINT "Torpedo tubes are under repair, "; N$; "."
+	END SELECT
+END IF
+
+IF C <= CR% THEN
+	subStatusCheck = 0
+	SELECT CASE SC%
+	CASE 1
+		PRINT "Not enough crew to man the engines, "; N$; "."
+	CASE 2
+		PRINT "Not enough crew to work sonar "; N$; "."
+	CASE 3
+		PRINT "Not enough crew to fire a torpedo, "; N$; "."
+	END SELECT
+END IF
+
+END FUNCTION  'subStatusCheck
+
 1040 REM *** #0: NAVIGATION ***
-1050 IF DM(1) >= 0 THEN 1080
-1060 PRINT "Engines are under repair, "; N$; "."
-1070 GOTO 880
-1080 IF C > 8 THEN 1110
-1090 PRINT "Not enough crew to man the engines, "; N$; "."
-1100 GOTO 880
+IF SubStatusCheck(1,8)=0 THEN 880
+'1050 IF DM(1) >= 0 THEN 1080
+'1060 PRINT "Engines are under repair, "; N$; "."
+'1070 GOTO 880
+'1080 IF C > 8 THEN 1110
+'1090 PRINT "Not enough crew to man the engines, "; N$; "."
+'1100 GOTO 880
 1110 D1 = 1 - ((.23 + RND(1) / 10) * (-(D <= 50)))
 1120 GOSUB 6080
 1130 PRINT "Power available ="; P;: COLOR 10: PRINT " Power to use";
@@ -176,7 +207,7 @@ END SELECT
 1170 IF RND(1) < .43 THEN 1210
 1180 PRINT "Your atomic pile went supercriticial, "; N$; "!  Headquarters will warn all"
 1190 PRINT "subs to stay from the radioactive area!"
-1200 CALL Lose
+1200 CALL SubLose
 1210 X = S1
 1220 Y = S2
 1230 Q1 = 1
@@ -198,16 +229,16 @@ END SELECT
 1390 IF D > 50 THEN 1290
 1400 PRINT "You rammed a ship!  You're both sunk, "; N$; "!"
 1410 S = S - 1
-1420 IF S = 0 THEN CALL Win
-1430 CALL Lose
+1420 IF S = 0 THEN CALL SubWin
+1430 CALL SubLose
 1440 IF D > 50 THEN 1290
 1450 PRINT "You rammed your headquarters!  You're sunk!"
-1460 CALL Lose
+1460 CALL SubLose
 1470 PRINT "You've been blown up by a mine, "; N$; "!"
-1480 CALL Lose
+1480 CALL SubLose
 1490 IF RND(1) < .21 THEN 1630
 1500 PRINT "You were eaten by a sea monster, "; N$; "!"
-1510 CALL Lose
+1510 CALL SubLose
 
 1520 REM *** CHECK FOR NEARBY SEA MONSTERS ***
 1530 FOR X3 = X - 2 TO X + 2
@@ -222,24 +253,33 @@ END SELECT
 1620 NEXT X3
 1630 NEXT X2
 1640 PRINT "Navigation complete.  Power left:"; P
-1650 IF P > 0 THEN 1340
-1660 PRINT "The atomic pile has gone dead!  Sub sinks, crew suffocates."
-1670 CALL Lose
+CALL SubFuel
+1650 GOTO 1340
+
 
 1680 REM *** #1: SONAR ***
-1690 IF DM(2) >= 0 THEN 1720
-1700 PRINT "The sonar is under repair, "; N$; "."
-1710 GOTO 880
-1720 IF C > 5 THEN 1750
-1730 PRINT "Not enough crew to work sonar, "; N$; "."
-1740 GOTO 880
+IF SubStatusCheck(2,5) = 0 THEN 880
+'1690 IF DM(2) >= 0 THEN 1720
+'1700 PRINT "The sonar is under repair, "; N$; "."
+'1710 GOTO 880
+'1720 IF C > 5 THEN 1750
+'1730 PRINT "Not enough crew to work sonar, "; N$; "."
+'1740 GOTO 880
 1750 PRINT "Option number (0,1)";
 1760 INPUT O
 1770 ON INT(O + 1) GOTO 1790, 2010
 1780 GOTO 1750
 
 
-SUB Map
+
+SUB SubFuel
+IF P <= 0 THEN
+	PRINT "The atomic pile has gone dead!  Sub sinks, crew suffocates."
+	CALL SubLose
+END IF
+END SUB 'Fuel
+
+SUB SubMap
 PRINT
 FOR X = 1 TO 20
 FOR Y = 1 TO 20
@@ -275,32 +315,12 @@ COLOR 15
 END SUB 'Map
 
 1790 REM *** PRINT OUT MAP ***
-'1800 PRINT
-'1810 FOR X = 1 TO 20
-'1820 FOR Y = 1 TO 20
-'1830 DATA "   ","***","(X)","\S/","!H!"," $ ","-#-"
-'1840 IF A(X, Y) <> 0 THEN 1880
-'1850 IF X <> 1 AND X <> 20 AND Y <> 1 AND Y <> 20 THEN 1880
-'1860 COLOR 9: PRINT " . ";: COLOR 15
-'1870 GOTO 1950
-'1880 RESTORE 1830
-'1890 FOR X1 = 1 TO A(X, Y) + 1
-'1900 READ A$
-'1910 NEXT X1
-'1920 IF D < 50 AND RND(1) < .23 AND A(X, Y) <> 1 AND A(X, Y) <> 2 THEN 1860
-'1930 IF RND(1) < .15 AND A(X, Y) > 2 THEN 1860
-'1940 IF A(X, Y) = 1 THEN COLOR 14
-'1942 IF A(X, Y) = 2 THEN COLOR 11
-'1944 IF A(X, Y) = 3 OR A(X, Y) = 4 OR A(X, Y) = 6 THEN COLOR 12
-'1946 IF A(X, Y) = 5 THEN COLOR 13
-'1948 PRINT A$;
-'1950 NEXT Y
-'1960 PRINT
-'1970 NEXT X: COLOR 15
-CALL Map
+
+CALL SubMap
 1980 P = P - 50
-1990 IF P > 0 THEN 880
-2000 GOTO 1660
+CALL SubFuel
+1990 GOTO 880
+
 
 2010 REM *** DIRECTIONAL INFORMATION ***
 2020 FOR I = 1 TO 5
@@ -327,19 +347,20 @@ CALL Map
 2210 GOTO 1980
 
 2220 REM *** #2: TORPEDO CONTROL ***
-2230 IF DM(3) >= 0 THEN 2260
-2240 PRINT "Torpedo tubes are under repair, "; N$; "."
-2250 GOTO 880
-2260 IF C >= 10 THEN 2290
-2270 PRINT "Not enough crew to fire a torpedo, "; N$; "."
-2280 GOTO 880
+IF SubStatusCheck(3,10) = 0 THEN 880
+'2230 IF DM(3) >= 0 THEN 2260
+'2240 PRINT "Torpedo tubes are under repair, "; N$; "."
+'2250 GOTO 880
+'2260 IF C >= 10 THEN 2290
+'2270 PRINT "Not enough crew to fire a torpedo, "; N$; "."
+'2280 GOTO 880
 2290 IF T THEN 2320
 2300 PRINT "No torpedos left, "; N$; "."
 2310 GOTO 880
 2320 IF D < 2000 THEN 2360
 2330 IF RND(1) > .5 THEN 2360
 2340 PRINT "Pressure implodes the sub upon firing... you're crushed!"
-2350 CALL Lose
+2350 CALL SubLose
 2360 GOSUB 6080
 2370 X = S1
 2380 Y = S2
@@ -348,8 +369,11 @@ CALL Map
 2410 PRINT "Torpedo out of sonar range... ineffectual, "; N$; "."
 2420 T = T - 1
 2430 P = P - 150
-2440 IF P > 0 THEN 4690
-2450 GOTO 1660
+'2440 IF P > 0 THEN 4690
+'2450 GOTO 1660
+CALL SubFuel
+GOTO 4690
+
 2460 ON A(X + X1, Y + Y1) + 1 GOTO 2470, 2510, 2650, 2540, 2580, 2610, 2630
 2470 X = X + X1
 2480 Y = Y + Y1
@@ -363,7 +387,7 @@ BEEP
 2540 PRINT "Ouch!  You got one, "; N$; "!"
 2550 S = S - 1
 2560 IF S <> 0 THEN 2520
-2570 CALL Win
+2570 CALL SubWin
 2580 PRINT "You blew up your headquarters, "; N$; "!"
 2590 S3 = 0: S4 = 0: D2 = 0
 2600 GOTO 2520
@@ -391,7 +415,7 @@ BEEP
 2810 IF LEFT$(A$, 1) = "N" OR LEFT$(A$, 1) = "n" THEN 880
 2820 IF RND(1) < .5 THEN 2850
 2830 PRINT "The missile explodes upon firing, "; N$; "!  You're dead!"
-2840 CALL Lose
+2840 CALL SubLose
 2850 GOSUB 6080
 2860 COLOR 10: PRINT "How much fuel (lbs.)";
 2870 INPUT F1: COLOR 15
@@ -404,7 +428,9 @@ BEEP
 2940 M = M - 1
 2950 F = F - F1
 2960 P = P - 300
-2970 GOTO 2440
+CALL SubFuel
+2970 GOTO 4690
+
 2980 D3 = 0: D4 = 0: D5 = 0: D6 = 0
 2990 FOR X = S1 + X1 * F2 - 1 TO S1 + X1 * F2 + 1
 3000 FOR Y = S2 + Y1 * F2 - 1 TO S2 + Y1 * F2 + 1
@@ -419,7 +445,7 @@ BEEP
 3090 GOTO 3130
 3100 IF A(X, Y) <> 2 THEN 3130
 3110 PRINT "You just destroyed yourself, "; N$; "!  Dummy!"
-3120 CALL Lose
+3120 CALL SubLose
 3130 A(X, Y) = 0
 3140 NEXT Y
 3150 NEXT X
@@ -444,7 +470,7 @@ BEEP
 3330 INPUT D1: COLOR 15
 3340 IF D1 >= 0 AND D1 < 3000 THEN 3370
 3350 PRINT "Hull crushed by pressure, "; N$; "!"
-3360 CALL Lose
+3360 CALL SubLose
 3370 P = P - INT(ABS((D - D1) / 2 + .5))
 3380 PRINT "Maneuver complete.  Power loss: "; INT(ABS((D - D1) / 2 + .5))
 3390 D = D1
@@ -536,7 +562,7 @@ BEEP
 4180 D6 = D6 + 1
 4190 A(X, Y) = 0
 4200 S = S - 1
-4210 IF S = 0 THEN CALL Win
+4210 IF S = 0 THEN CALL SubWin
 4220 NEXT Y
 4230 NEXT X
 4240 PRINT D6; "ships were destroyed, "; N$; "."
@@ -587,7 +613,7 @@ BEEP
 
 4660 REM *** #9: SURRENDER ***
 4670 PRINT "Coward!  You're not very patriotic, "; N$; "!"
-4680 CALL Lose
+4680 CALL SubLose
 
 4690 REM *** RETALIATION SECTION ***
 4700 Q = 0
@@ -630,6 +656,7 @@ BEEP
 5070 DM(Y) = DM(Y) - RND(1) * 11
 5080 NEXT X
 5090 GOTO 5210
+
 5100 PRINT "Damage critical!  We need help!"
 5110 A$ = "VRAVUKXCNVPCRHFDRSAXQURLQTRHXYACVFZYITLCBSSYYKDQIPCAEGQGPCNOTSIO"
 5120 X = INT(RND(1) * 16) + 1
@@ -641,13 +668,13 @@ BEEP
 5170 PRINT "Fast work, "; N$; "!  Help arrives in time to save you!"
 5180 GOTO 5040
 5190 PRINT "Message garbled, "; N$; "... no help arrives!"
-5200 CALL Lose
+5200 CALL SubLose
 
 5210 REM *** MOVE SHIPS / SEA MONSTERS ***
 5220 IF DM(1) >= 0 OR DM(3) >= 0 OR DM(4) >= 0 OR DM(5) >= 0 OR DM(7) >= 0 THEN 5260
 5230 IF DM(8) >= 0 OR DM(9) >= 0 THEN 5260
 5240 PRINT "Damage too much, "; N$; "!  You're sunk!"
-5250 CALL Lose
+5250 CALL SubLose
 
 5260 REM *** MOVE SHIPS / SEA MONSTERS ***
 5270 PRINT: PRINT "---*** Result of Last Enemy Maneuver **---"
@@ -682,7 +709,7 @@ BEEP
 
 5530 IF D > 50 THEN 5460
 5540 COLOR 12: PRINT "*** You've been rammed by a ship, "; N$; "!": COLOR 15
-5550 CALL Lose
+5550 CALL SubLose
 
 5560 IF RND(1) < .15 THEN 5460
 5570 COLOR 12: PRINT "*** Your headquarters was rammed, "; N$; "!": COLOR 15
@@ -693,7 +720,7 @@ BEEP
 5610 COLOR 12: PRINT "*** Ship destroyed by a mine, "; N$; "!": COLOR 15
 5620 S = S - 1
 5630 IF S <> 0 THEN 5440
-5640 CALL Win
+5640 CALL SubWin
 
 5650 IF RND(1) < .8 THEN 5460
 5660 COLOR 12: PRINT "*** Ship eaten by a sea monster, "; N$; "!": COLOR 15
@@ -704,6 +731,7 @@ BEEP
 5700 IF A(X, Y) <> 6 THEN 6000
 5710 IF X + M1 < 1 OR X + M1 > 20 OR Y + M2 < 1 OR Y + M2 > 20 THEN 5760
 5720 ON A(X + M1, Y + M2) + 1 GOTO 5730, 5760, 5830, 5850, 5900, 5730, 5930
+
 5730 A(X + M1, Y + M2) = 6
 5740 A(X, Y) = 0
 5750 GOTO 6000
@@ -715,16 +743,20 @@ BEEP
 5800 NEXT X0
 5810 IF X + M1 < 1 OR X + M1 > 20 OR Y + M2 < 1 OR Y + M2 > 20 THEN 5760
 5820 GOTO 5720
+
 5830 COLOR 12: PRINT "*** You've been eaten by a sea monster, "; N$; "!": COLOR 15
-5840 CALL Lose
+5840 CALL SubLose
+
 5850 IF RND(1) > .2 THEN 5760
 5860 COLOR 12: PRINT "*** Ship eaten by a sea monster, "; N$; "!": COLOR 15
 5870 S = S - 1
 5880 IF S <> 0 THEN 5730
-5890 CALL Win
+5890 CALL SubWin
+
 5900 COLOR 12: PRINT "*** A sea monster ate your headquarters, "; N$; "!": COLOR 15
 5910 S3 = 0: S4 = 0: D2 = 0
 5920 GOTO 5730
+
 5930 IF RND(1) < .75 THEN 5760
 5940 COLOR 12: PRINT "*** A sea monster fight, "; N$; "!  ";
 5950 IF RND(1) < .8 THEN 5980
@@ -743,6 +775,7 @@ BEEP
 6060 NEXT Y
 6070 GOTO 880
 
+
 6080 REM *** GOSUB FOR COURSE / DIRECTION ***
 6090 DATA -1,0,-1,1,0,1,1,1,1,0,1,-1,0,-1,-1,-1
 6100 COLOR 10: PRINT "What course (1-8)";
@@ -755,7 +788,7 @@ BEEP
 6170 RETURN
 
 'Lose
-SUB Lose
+SUB SubLose
 REM *** DESTROYED ? ***
 PRINT "There are still"; S; " enemy ships left, "; N$; "."
 PRINT "You will be demoted to the rank of deck scrubber!"
@@ -768,7 +801,7 @@ END SUB 'Lose
 '6240 GOTO 310
 '6250 STOP
 'Win
-SUB Win
+SUB SubWin
 PRINT "Good work, "; N$; "!  You got them all!!!"
 PRINT "Promotions and commendations will be given immediately!"
 WL=2
