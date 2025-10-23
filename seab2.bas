@@ -123,6 +123,7 @@ M = 3
 D = 1000
 D2 = 2
 
+
 'Main Loop
 880 REM *** COMMAND SECTION ***
 PRINT: COLOR 10: PRINT "What are your orders (1-9), "; N$;
@@ -173,6 +174,11 @@ IF DM(SC%) < 0 THEN
 		PRINT "The sonar is under repair "; N$;"."
 	CASE 3
 		PRINT "Torpedo tubes are under repair, "; N$; "."
+	CASE 4
+		PRINT "Missile silos are under repair, "; N$; "."
+	CASE 5
+		PRINT "Ballast controls are being repaired, "; N$; "."
+	CASE 6
 	END SELECT
 END IF
 
@@ -185,6 +191,11 @@ IF C <= CR% THEN
 		PRINT "Not enough crew to work sonar "; N$; "."
 	CASE 3
 		PRINT "Not enough crew to fire a torpedo, "; N$; "."
+	CASE 4
+		PRINT "Not enough crew to launch a missile, "; N$; "."
+	CASE 5
+		PRINT "There are not enough crew to work the controls, "; N$; "."
+	CASE 6
 	END SELECT
 END IF
 
@@ -192,15 +203,10 @@ END FUNCTION  'subStatusCheck
 
 1040 REM *** #0: NAVIGATION ***
 IF SubStatusCheck(1,8)=0 THEN 880
-'1050 IF DM(1) >= 0 THEN 1080
-'1060 PRINT "Engines are under repair, "; N$; "."
-'1070 GOTO 880
-'1080 IF C > 8 THEN 1110
-'1090 PRINT "Not enough crew to man the engines, "; N$; "."
-'1100 GOTO 880
+
 1110 D1 = 1 - ((.23 + RND(1) / 10) * (-(D <= 50)))
 1120 GOSUB 6080
-1130 PRINT "Power available ="; P;: COLOR 10: PRINT " Power to use";
+1130 PRINT "Power available ="; P;: COLOR 10: PRINT " Power to use (100/square) ";
 1140 INPUT P1: COLOR 15
 1150 IF P1 < 0 OR P1 > P THEN 1130
 1160 IF P1 <= 1000 THEN 1210
@@ -252,24 +258,31 @@ IF SubStatusCheck(1,8)=0 THEN 880
 1610 NEXT Y3
 1620 NEXT X3
 1630 NEXT X2
-1640 PRINT "Navigation complete.  Power left:"; P
+1640 PRINT "Navigation complete.  Power left: "; P
 CALL SubFuel
 1650 GOTO 1340
 
 
 1680 REM *** #1: SONAR ***
 IF SubStatusCheck(2,5) = 0 THEN 880
-'1690 IF DM(2) >= 0 THEN 1720
-'1700 PRINT "The sonar is under repair, "; N$; "."
-'1710 GOTO 880
-'1720 IF C > 5 THEN 1750
-'1730 PRINT "Not enough crew to work sonar, "; N$; "."
-'1740 GOTO 880
-1750 PRINT "Option number (0,1)";
-1760 INPUT O
-1770 ON INT(O + 1) GOTO 1790, 2010
-1780 GOTO 1750
 
+'1750 PRINT "Option number (0,1)";
+'1760 INPUT O
+'1770 ON INT(O + 1) GOTO 1790, 2010
+'1780 GOTO 1750
+
+'1790 REM *** PRINT OUT MAP ***
+
+CALL SubMap
+CALL SubShipDir
+
+1980 P = P - 100
+CALL SubFuel
+1990 GOTO 880
+
+'2010 REM *** DIRECTIONAL INFORMATION ***
+
+'2210 GOTO 1980
 
 
 SUB SubFuel
@@ -314,46 +327,35 @@ NEXT X
 COLOR 15
 END SUB 'Map
 
-1790 REM *** PRINT OUT MAP ***
 
-CALL SubMap
-1980 P = P - 50
-CALL SubFuel
-1990 GOTO 880
-
-
-2010 REM *** DIRECTIONAL INFORMATION ***
-2020 FOR I = 1 TO 5
-2022 B(I) = 0
-2024 NEXT I
-2030 PRINT "Direction   # of Ships     Distances": COLOR 11
-2040 RESTORE 6090
-2050 FOR X = 1 TO 8
-2060 READ X1, Y1
-2070 X3 = 0
-2080 FOR X4 = 1 TO 20
-2090 IF S1 + X1 * X4 < 1 OR S1 + X1 * X4 > 20 OR S2 + Y1 * X4 < 1 OR S2 + Y1 * X4 > 20 THEN 2140
-2100 IF A(S1 + X1 * X4, S2 + Y1 * X4) <> 3 THEN 2130
-2110 X3 = X3 + 1
-2120 B(X3) = X4
-2130 NEXT X4
+SUB SubShipDir
+FOR I = 1 TO 5
+	B(I) = 0
+NEXT I
+PRINT "Direction   # of Ships     Distances": COLOR 11
+RESTORE 6090
+FOR X = 1 TO 8
+	READ X1, Y1
+	X3 = 0
+	FOR X4 = 1 TO 20
+		IF S1 + X1 * X4 < 1 OR S1 + X1 * X4 > 20 OR S2 + Y1 * X4 < 1 OR S2 + Y1 * X4 > 20 THEN 2140
+		IF A(S1 + X1 * X4, S2 + Y1 * X4) <> 3 THEN 2130
+		X3 = X3 + 1
+		B(X3) = X4
+	2130 NEXT X4
 2140 IF X3 = 0 THEN 2200
-2150 PRINT "   "; X, X3,
-2160 FOR X4 = 1 TO X3
-2170 PRINT B(X4);
-2180 NEXT X4
-2190 PRINT
+PRINT "   "; X, X3,
+FOR X4 = 1 TO X3
+	PRINT B(X4);
+NEXT X4
+PRINT
 2200 NEXT X: COLOR 15
-2210 GOTO 1980
+END SUB  'SubShipDir
+
 
 2220 REM *** #2: TORPEDO CONTROL ***
 IF SubStatusCheck(3,10) = 0 THEN 880
-'2230 IF DM(3) >= 0 THEN 2260
-'2240 PRINT "Torpedo tubes are under repair, "; N$; "."
-'2250 GOTO 880
-'2260 IF C >= 10 THEN 2290
-'2270 PRINT "Not enough crew to fire a torpedo, "; N$; "."
-'2280 GOTO 880
+
 2290 IF T THEN 2320
 2300 PRINT "No torpedos left, "; N$; "."
 2310 GOTO 880
@@ -400,12 +402,8 @@ BEEP
 2670 GOTO 2420
 
 2680 REM *** #3: POLARIS MISSILE CONTROL ***
-2690 IF DM(4) >= 0 THEN 2720
-2700 PRINT "Missile silos are under repair, "; N$; "."
-2710 GOTO 880
-2720 IF C > 23 THEN 2750
-2730 PRINT "Not enough crew to launch a missile, "; N$; "."
-2740 GOTO 880
+IF SubStatusCheck(4,23) = 0 THEN 880
+
 2750 IF M <> 0 THEN 2780
 2760 PRINT "No missiles left, "; N$; "."
 2770 GOTO 880
@@ -452,20 +450,21 @@ CALL SubFuel
 3160 IF D6 = 0 THEN 3180
 3170 PRINT "You blew up some island, "; N$; "."
 3180 IF D5 = 0 THEN 3200
-3190 PRINT "You destroyed"; D5; "mines, "; N$; "."
+3190 PRINT "You destroyed "; D5; "mines, "; N$; "."
 3200 IF D4 = 0 THEN 3220
-3210 PRINT "You got"; D4; "sea monsters, "; N$; "!  Good work!"
-3220 PRINT "You destroyed"; D3; "enemy ships, "; N$; "!"
+3210 PRINT "You got "; D4; "sea monsters, "; N$; "!  Good work!"
+3220 PRINT "You destroyed "; D3; "enemy ships, "; N$; "!"
 3230 S = S - D3
 3240 GOTO 2940
 
 3250 REM *** MANUEVERING ***
-3260 IF DM(5) >= 0 THEN 3290
-3270 PRINT "Ballast controls are being repaired, "; N$; "."
-3280 GOTO 880
-3290 IF C > 12 THEN 3320
-3300 PRINT "There are not enough crew to work the controls, "; N$; "."
-3310 GOTO 880
+IF SubStatusCheck(5,12) = 0 THEN 880
+'3260 IF DM(5) >= 0 THEN 3290
+'3270 PRINT "Ballast controls are being repaired, "; N$; "."
+'3280 GOTO 880
+'3290 IF C > 12 THEN 3320
+'3300 PRINT "There are not enough crew to work the controls, "; N$; "."
+'3310 GOTO 880
 3320 COLOR 10: PRINT "New depth";
 3330 INPUT D1: COLOR 15
 3340 IF D1 >= 0 AND D1 < 3000 THEN 3370
@@ -491,10 +490,10 @@ CALL SubFuel
 3520 PRINT "# of crewmen left ..........."; C
 3530 PRINT "Lbs. of fuel left ..........."; F
 3540 PRINT
-3550 COLOR 10: PRINT "Want damage report (Y/N)";
-3560 INPUT A$: COLOR 15
-3570 IF LEFT$(A$, 1) = "N" OR LEFT$(A$, 1) = "n" THEN 3670
-3580 PRINT
+'3550 COLOR 10: PRINT "Want damage report (Y/N)";
+'3560 INPUT A$: COLOR 15
+'3570 IF LEFT$(A$, 1) = "N" OR LEFT$(A$, 1) = "n" THEN 3670
+'3580 PRINT
 3585 PRINT "   Item         Damage  (+ Good, 0 Neutral, - Bad)"
 3590 PRINT "   ----         ------"
 3600 DATA "Engines","Sonar","Torpedos","Missiles","Maneuvering"
@@ -547,7 +546,7 @@ CALL SubFuel
 4030 IF D3 <> 0 THEN 4060
 4040 PRINT "No ships in range, "; N$; "."
 4050 GOTO 880
-4060 PRINT "There are"; D3; "ships in range, "; N$; "."
+4060 PRINT "There are "; D3; "ships in range, "; N$; "."
 4070 COLOR 10: PRINT "How many men are going, "; N$;
 4080 INPUT Q1: COLOR 15
 4090 IF C - Q1 >= 10 THEN 4120
@@ -565,7 +564,7 @@ CALL SubFuel
 4210 IF S = 0 THEN CALL SubWin
 4220 NEXT Y
 4230 NEXT X
-4240 PRINT D6; "ships were destroyed, "; N$; "."
+4240 PRINT D6; " ships were destroyed, "; N$; "."
 4250 D6 = 0: D7 = 0
 4260 FOR X = 1 TO Q1
 4270 D7 = D7 - (RND(1) > .6)
@@ -624,6 +623,7 @@ CALL SubFuel
 4750 Q = Q + (RND(1) / SQR((S1 - X) ^ 2 + (S2 - Y) ^ 2))
 4760 NEXT Y
 4770 NEXT X
+
 4780 IF Q THEN 4810
 4790 PRINT "No ships in range to depth charge you, "; N$; "!"
 4800 GOTO 5210
@@ -778,7 +778,8 @@ CALL SubFuel
 
 6080 REM *** GOSUB FOR COURSE / DIRECTION ***
 6090 DATA -1,0,-1,1,0,1,1,1,1,0,1,-1,0,-1,-1,-1
-6100 COLOR 10: PRINT "What course (1-8)";
+
+6100 COLOR 10: PRINT "What course (1-8) ";
 6110 INPUT C1: COLOR 15
 6120 IF C1 < 1 OR C1 > 8 THEN 6100
 6130 RESTORE 6090
@@ -790,16 +791,12 @@ CALL SubFuel
 'Lose
 SUB SubLose
 REM *** DESTROYED ? ***
-PRINT "There are still"; S; " enemy ships left, "; N$; "."
+PRINT "There are still "; S; " enemy ships left, "; N$; "."
 PRINT "You will be demoted to the rank of deck scrubber!"
 WL=1
 END
 END SUB 'Lose
-'6210 COLOR 10: PRINT "Want another game (Y/N)";
-'6220 INPUT A$: COLOR 15
-'6230 IF LEFT$(A$, 1) <> "Y" AND LEFT$(A$, 1) <> "y" THEN 6250
-'6240 GOTO 310
-'6250 STOP
+
 'Win
 SUB SubWin
 PRINT "Good work, "; N$; "!  You got them all!!!"
@@ -807,7 +804,9 @@ PRINT "Promotions and commendations will be given immediately!"
 WL=2
 END
 END SUB 'Win
-'6280 GOTO 6210
+
+
+
 
 6290 REM *** ISLAND DATA ***
 6300 DATA 0,1,1,1,0,0,0,1,1,1,1,0,1,1,1,0,1,1,1,1,0,0,0,1
