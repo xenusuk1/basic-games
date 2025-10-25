@@ -32,7 +32,7 @@ REM *** PROGRAM FOLLOWS ***
 REM ***
 
 DIM SHARED A(20, 20), DM(9), B(5)
-DIM SHARED I,J,X,Y,S,S1,S2,S3,S4,X1,X2 AS INTEGER
+DIM SHARED C1,I,J,X,Y,S,S1,S2,S3,S4,X1,X2,Y1,Y2 AS INTEGER
 
 
 
@@ -205,18 +205,22 @@ END FUNCTION  'subStatusCheck
 IF SubStatusCheck(1,8)=0 THEN 880
 
 1110 D1 = 1 - ((.23 + RND(1) / 10) * (-(D <= 50)))
-1120 GOSUB 6080
+'1120
+CALL SubCourse
 1130 PRINT "Power available ="; P;: COLOR 10: PRINT " Power to use (100/square) ";
 1140 INPUT P1: COLOR 15
 1150 IF P1 < 0 OR P1 > P THEN 1130
-1160 IF P1 <= 1000 THEN 1210
-1170 IF RND(1) < .43 THEN 1210
-1180 PRINT "Your atomic pile went supercriticial, "; N$; "!  Headquarters will warn all"
-1190 PRINT "subs to stay from the radioactive area!"
-1200 CALL SubLose
-1210 X = S1
-1220 Y = S2
-1230 Q1 = 1
+
+IF P1 > 1000 AND RND(1) > .43 THEN
+	PRINT "Your atomic pile went supercriticial, "; N$; "!  Headquarters will warn all"
+	PRINT "subs to stay from the radioactive area!"
+	CALL SubLose
+END IF
+X = S1
+Y = S2
+Q1 = 1
+
+' Move loop
 1240 FOR X2 = 1 TO INT(INT(P1 / 100 + .5) * D1 + .5)
 1250 IF X + X1 > 0 AND X + X1 < 21 AND Y + Y1 > 0 AND Y + Y1 < 21 THEN 1280
 1260 PRINT "You can't leave the area, "; N$; "!"
@@ -243,10 +247,11 @@ IF SubStatusCheck(1,8)=0 THEN 880
 1470 PRINT "You've been blown up by a mine, "; N$; "!"
 1480 CALL SubLose
 1490 IF RND(1) < .21 THEN 1630
+
 1500 PRINT "You were eaten by a sea monster, "; N$; "!"
 1510 CALL SubLose
 
-1520 REM *** CHECK FOR NEARBY SEA MONSTERS ***
+1520 REM *** CHECK FOR NEARBY SEA MONSTERS 6 ***
 1530 FOR X3 = X - 2 TO X + 2
 1540 FOR Y3 = Y - 2 TO Y + 2
 1550 IF X3 < 1 OR X3 > 20 OR Y3 < 1 OR Y3 > 20 THEN 1610
@@ -257,7 +262,9 @@ IF SubStatusCheck(1,8)=0 THEN 880
 1600 Q1 = 0
 1610 NEXT Y3
 1620 NEXT X3
+
 1630 NEXT X2
+
 1640 PRINT "Navigation complete.  Power left: "; P
 CALL SubFuel
 1650 GOTO 1340
@@ -266,24 +273,12 @@ CALL SubFuel
 1680 REM *** #1: SONAR ***
 IF SubStatusCheck(2,5) = 0 THEN 880
 
-'1750 PRINT "Option number (0,1)";
-'1760 INPUT O
-'1770 ON INT(O + 1) GOTO 1790, 2010
-'1780 GOTO 1750
-
-'1790 REM *** PRINT OUT MAP ***
-
 CALL SubMap
 CALL SubShipDir
 
 1980 P = P - 100
 CALL SubFuel
 1990 GOTO 880
-
-'2010 REM *** DIRECTIONAL INFORMATION ***
-
-'2210 GOTO 1980
-
 
 SUB SubFuel
 IF P <= 0 THEN
@@ -333,9 +328,10 @@ FOR I = 1 TO 5
 	B(I) = 0
 NEXT I
 PRINT "Direction   # of Ships     Distances": COLOR 11
-RESTORE 6090
-FOR X = 1 TO 8
-	READ X1, Y1
+'RESTORE 6090
+FOR X = 1 TO 9
+'	READ X1, Y1
+CALL SubDirection(X)
 	X3 = 0
 	FOR X4 = 1 TO 20
 		IF S1 + X1 * X4 < 1 OR S1 + X1 * X4 > 20 OR S2 + Y1 * X4 < 1 OR S2 + Y1 * X4 > 20 THEN 2140
@@ -356,17 +352,22 @@ END SUB  'SubShipDir
 2220 REM *** #2: TORPEDO CONTROL ***
 IF SubStatusCheck(3,10) = 0 THEN 880
 
-2290 IF T THEN 2320
-2300 PRINT "No torpedos left, "; N$; "."
-2310 GOTO 880
-2320 IF D < 2000 THEN 2360
-2330 IF RND(1) > .5 THEN 2360
-2340 PRINT "Pressure implodes the sub upon firing... you're crushed!"
-2350 CALL SubLose
-2360 GOSUB 6080
+IF T<=0 THEN
+	PRINT "No torpedos left, "; N$; "."
+	GOTO 880
+END IF
+
+IF D > 2000 AND RND(1) > .5 THEN
+	PRINT "Pressure implodes the sub upon firing... you're crushed!"
+	CALL SubLose
+END IF
+
+2360 CALL SubCourse
 2370 X = S1
 2380 Y = S2
+
 2390 FOR X2 = 1 TO INT(7 + 5 * (-(D > 50)) - RND(1) * 4 + .5)
+PRINT X,Y,X1,Y1
 2400 IF X + X1 > 0 AND X + X1 < 21 AND Y + Y1 > 0 AND Y + Y1 < 21 THEN 2460
 2410 PRINT "Torpedo out of sonar range... ineffectual, "; N$; "."
 2420 T = T - 1
@@ -414,7 +415,7 @@ IF SubStatusCheck(4,23) = 0 THEN 880
 2820 IF RND(1) < .5 THEN 2850
 2830 PRINT "The missile explodes upon firing, "; N$; "!  You're dead!"
 2840 CALL SubLose
-2850 GOSUB 6080
+2850 CALL SubCourse
 2860 COLOR 10: PRINT "How much fuel (lbs.)";
 2870 INPUT F1: COLOR 15
 2880 IF F1 > 0 AND F1 <= F THEN 2910
@@ -459,12 +460,7 @@ CALL SubFuel
 
 3250 REM *** MANUEVERING ***
 IF SubStatusCheck(5,12) = 0 THEN 880
-'3260 IF DM(5) >= 0 THEN 3290
-'3270 PRINT "Ballast controls are being repaired, "; N$; "."
-'3280 GOTO 880
-'3290 IF C > 12 THEN 3320
-'3300 PRINT "There are not enough crew to work the controls, "; N$; "."
-'3310 GOTO 880
+
 3320 COLOR 10: PRINT "New depth";
 3330 INPUT D1: COLOR 15
 3340 IF D1 >= 0 AND D1 < 3000 THEN 3370
@@ -490,10 +486,7 @@ IF SubStatusCheck(5,12) = 0 THEN 880
 3520 PRINT "# of crewmen left ..........."; C
 3530 PRINT "Lbs. of fuel left ..........."; F
 3540 PRINT
-'3550 COLOR 10: PRINT "Want damage report (Y/N)";
-'3560 INPUT A$: COLOR 15
-'3570 IF LEFT$(A$, 1) = "N" OR LEFT$(A$, 1) = "n" THEN 3670
-'3580 PRINT
+
 3585 PRINT "   Item         Damage  (+ Good, 0 Neutral, - Bad)"
 3590 PRINT "   ----         ------"
 3600 DATA "Engines","Sonar","Torpedos","Missiles","Maneuvering"
@@ -776,17 +769,46 @@ IF SubStatusCheck(5,12) = 0 THEN 880
 6070 GOTO 880
 
 
-6080 REM *** GOSUB FOR COURSE / DIRECTION ***
-6090 DATA -1,0,-1,1,0,1,1,1,1,0,1,-1,0,-1,-1,-1
+SUB SubCourse
+'6080 REM *** GOSUB FOR COURSE / DIRECTION ***
+6100 COLOR 10: PRINT "What course (1-9) ";
+INPUT C1: COLOR 15
+IF C1 < 1 OR C1 > 9 THEN 6100
+IF C1=5 THEN 6100
 
-6100 COLOR 10: PRINT "What course (1-8) ";
-6110 INPUT C1: COLOR 15
-6120 IF C1 < 1 OR C1 > 8 THEN 6100
-6130 RESTORE 6090
-6140 FOR X9 = 1 TO INT(C1 + .5)
-6150 READ X1, Y1
-6160 NEXT X9
-6170 RETURN
+CALL SubDirection(C1)
+
+'RESTORE 6090
+'FOR X9 = 1 TO INT(C1 + .5)
+'	READ X1, Y1
+'NEXT X9
+'6170 RETURN
+END SUB ' Course
+
+SUB SubDirection (DIR)
+SELECT CASE DIR
+CASE 1
+	X1=1:Y1=-1
+CASE 2
+	X1=1:Y1=0
+CASE 3
+	X1=1:Y1=1
+CASE 4
+	X1=0:Y1=-1
+CASE 5
+	X1=0:Y1=0
+CASE 6
+	X1=0:Y1=1
+CASE 7
+	X1=-1:Y1=-1
+CASE 8
+	X1=-1:Y1=0
+CASE 9
+	X1=-1:Y1=1
+END SELECT
+
+END SUB
+
 
 'Lose
 SUB SubLose
@@ -806,7 +828,7 @@ END
 END SUB 'Win
 
 
-
+6090 DATA -1,0,-1,1,0,1,1,1,1,0,1,-1,0,-1,-1,-1
 
 6290 REM *** ISLAND DATA ***
 6300 DATA 0,1,1,1,0,0,0,1,1,1,1,0,1,1,1,0,1,1,1,1,0,0,0,1
@@ -841,11 +863,11 @@ PRINT "You have ten orders that you may give.  They are:"
 PRINT
 COLOR 11: PRINT "#0: NAVIGATION - ";: COLOR 14: PRINT "This command allows you to move in a particular direction and"
 PRINT "distance across your area.  The direction is determined by the graph at left."
-COLOR 12: PRINT "  8 1 2";: COLOR 14: PRINT "  There are 8 directions to move in, and they are the same anytime you"
+COLOR 12: PRINT "  7 8 9";: COLOR 14: PRINT "  There are 8 directions to move in, and they are the same anytime you"
 COLOR 12: PRINT "   \|/ ";: COLOR 14: PRINT "  are asked for a course.  For example, to move north, you would use"
-COLOR 12: PRINT "  7-*-3";: COLOR 14: PRINT "  course #1.  The computer will also ask for an amount of power.  It"
+COLOR 12: PRINT "  4-*-6";: COLOR 14: PRINT "  course #1.  The computer will also ask for an amount of power.  It"
 COLOR 12: PRINT "   /|\ ";: COLOR 14: PRINT "  takes 100 units of power to move your sub 1 space.  Beware of"
-COLOR 12: PRINT "  6 5 4";: COLOR 14: PRINT "  obstacles!  If you use more than 1000 units in a turn, there is an"
+COLOR 12: PRINT "  1 2 3";: COLOR 14: PRINT "  obstacles!  If you use more than 1000 units in a turn, there is an"
 PRINT "overload danger, so be very careful!"
 PRINT
 COLOR 11: PRINT "#1: SONAR - ";: COLOR 14: PRINT "This command has two options.  Option #1 gives directional infor-";
