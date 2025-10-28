@@ -59,7 +59,7 @@ FOR Y = 7 TO 12
 NEXT Y
 NEXT X
 
-REM *** SUB 2***
+REM *** SUB 2 position ***
 S1 = 10: S2 = 10
 A(S1, S2) = 2
 
@@ -179,6 +179,8 @@ IF DM(SC%) < 0 THEN
 	CASE 5
 		PRINT "Ballast controls are being repaired, "; N$; "."
 	CASE 6
+		PRINT "No reports are able to get through, "; N$; "."
+	CASE 7
 	END SELECT
 END IF
 
@@ -196,6 +198,8 @@ IF C <= CR% THEN
 	CASE 5
 		PRINT "There are not enough crew to work the controls, "; N$; "."
 	CASE 6
+		PRINT "No one left to give the report, "; N$; "."
+	CASE 7
 	END SELECT
 END IF
 
@@ -366,41 +370,90 @@ END IF
 2370 X = S1
 2380 Y = S2
 
-2390 FOR X2 = 1 TO INT(7 + 5 * (-(D > 50)) - RND(1) * 4 + .5)
-PRINT X,Y,X1,Y1
-2400 IF X + X1 > 0 AND X + X1 < 21 AND Y + Y1 > 0 AND Y + Y1 < 21 THEN 2460
-2410 PRINT "Torpedo out of sonar range... ineffectual, "; N$; "."
+X2MAX = INT(7 + 5 * (-(D > 50)) - RND(1) * 4 + .5)
+X2=1
+DO
+
+'2390 FOR X2 = 1 TO INT(7 + 5 * (-(D > 50)) - RND(1) * 4 + .5)
+
+PRINT X,Y,X1,Y1,A(X + X1, Y + Y1),X2MAX
+IF X + X1 <= 0 OR X + X1 >= 20 OR Y + Y1 <= 0 OR Y + Y1 >= 20 THEN
+	PRINT "Torpedo out of sonar range... ineffectual, "; N$; "."
+	X2MAX=99
+	EXIT DO
+END IF
+
+'2400 IF X + X1 > 0 AND X + X1 < 21 AND Y + Y1 > 0 AND Y + Y1 < 21 THEN 2460
+'2410 PRINT "Torpedo out of sonar range... ineffectual, "; N$; "."
+
+SELECT CASE A(X + X1, Y + Y1)
+CASE 0
+	X = X + X1
+	Y = Y + Y1
+	PRINT "..!..";
+	CALL SubWait(1)
+	BEEP
+CASE 1
+	PRINT "You took out some island, "; N$; "!"
+	A(X + X1, Y + Y1) = 0
+	X2MAX=99
+CASE 2
+' your sub
+CASE 3
+	PRINT "Ouch!  You got one, "; N$; "!"
+	S = S - 1
+	IF S <= 0 THEN CALL SubWin
+	A(X + X1, Y + Y1) = 0
+	X2MAX=99
+CASE 4
+	PRINT "You blew up your headquarters, "; N$; "!"
+	S3 = 0: S4 = 0: D2 = 0
+	A(X + X1, Y + Y1) = 0
+	X2MAX=99
+CASE 5
+	PRINT "Blam!  Shot wasted on a mine, "; N$; "!"
+	A(X + X1, Y + Y1) = 0
+	X2MAX=99
+CASE 6
+	PRINT "A sea monster had a torpedo for lunch, "; N$; "!"
+	X2MAX=99
+
+END SELECT
+
+'2460 ON A(X + X1, Y + Y1) + 1 GOTO 2470, 2510, 2650, 2540, 2580, 2610, 2630
+'2470 X = X + X1
+'2480 Y = Y + Y1
+'2490 PRINT "..!..";
+'CALL SubWait(1)
+'BEEP
+'2500 GOTO 2650
+'2510 PRINT "You took out some island, "; N$; "!"
+'2520 A(X + X1, Y + Y1) = 0
+'2530 GOTO 2420
+'2540 PRINT "Ouch!  You got one, "; N$; "!"
+'2550 S = S - 1
+'2560 IF S <> 0 THEN 2520
+'2570 CALL SubWin
+'2580 PRINT "You blew up your headquarters, "; N$; "!"
+'2590 S3 = 0: S4 = 0: D2 = 0
+'2600 GOTO 2520
+'2610 PRINT "Blam!  Shot wasted on a mine, "; N$; "!"
+'2620 GOTO 2520
+'2630 PRINT "A sea monster had a torpedo for lunch, "; N$; "!"
+'2640 GOTO 2420
+
+X2=X2+1
+LOOP UNTIL X2>X2MAX OR X2MAX = 99
+'2650 NEXT X2
+
+IF X2MAX<99 THEN PRINT "Dud."
+
 2420 T = T - 1
-2430 P = P - 150
-'2440 IF P > 0 THEN 4690
-'2450 GOTO 1660
+P = P - 150
+
 CALL SubFuel
 GOTO 4690
 
-2460 ON A(X + X1, Y + Y1) + 1 GOTO 2470, 2510, 2650, 2540, 2580, 2610, 2630
-2470 X = X + X1
-2480 Y = Y + Y1
-2490 PRINT "..!..";
-CALL SubWait(1)
-BEEP
-2500 GOTO 2650
-2510 PRINT "You took out some island, "; N$; "!"
-2520 A(X + X1, Y + Y1) = 0
-2530 GOTO 2420
-2540 PRINT "Ouch!  You got one, "; N$; "!"
-2550 S = S - 1
-2560 IF S <> 0 THEN 2520
-2570 CALL SubWin
-2580 PRINT "You blew up your headquarters, "; N$; "!"
-2590 S3 = 0: S4 = 0: D2 = 0
-2600 GOTO 2520
-2610 PRINT "Blam!  Shot wasted on a mine, "; N$; "!"
-2620 GOTO 2520
-2630 PRINT "A sea monster had a torpedo for lunch, "; N$; "!"
-2640 GOTO 2420
-2650 NEXT X2
-2660 PRINT "Dud."
-2670 GOTO 2420
 
 2680 REM *** #3: POLARIS MISSILE CONTROL ***
 IF SubStatusCheck(4,23) = 0 THEN 880
@@ -472,12 +525,15 @@ IF SubStatusCheck(5,12) = 0 THEN 880
 3400 GOTO 4690
 
 3410 REM *** #5: STATUS / DAMAGE REPORT ***
-3420 IF DM(6) >= 0 THEN 3450
-3430 PRINT "No reports are able to get through, "; N$; "."
-3440 GOTO 880
-3450 IF C > 3 THEN 3480
-3460 PRINT "No one left to give the report, "; N$; "."
-3470 GOTO 880
+IF SubStatusCheck(1,3) = 0 THEN 880
+
+'3420 IF DM(6) >= 0 THEN 3450
+'3430 PRINT "No reports are able to get through, "; N$; "."
+'3440 GOTO 880
+'3450 IF C > 3 THEN 3480
+'3460 PRINT "No one left to give the report, "; N$; "."
+'3470 GOTO 880
+
 3480 PRINT: COLOR 11
 3485 PRINT "# of enemy ships left ......."; S
 3490 PRINT "# of power units left ......."; P
@@ -485,6 +541,7 @@ IF SubStatusCheck(5,12) = 0 THEN 880
 3510 PRINT "# of missiles left .........."; M
 3520 PRINT "# of crewmen left ..........."; C
 3530 PRINT "Lbs. of fuel left ..........."; F
+     PRINT "Depth ......................."; D
 3540 PRINT
 
 3585 PRINT "   Item         Damage  (+ Good, 0 Neutral, - Bad)"
@@ -507,7 +564,7 @@ IF SubStatusCheck(5,12) = 0 THEN 880
 3720 PRINT "Headquarters is damaged and unable to help, "; N$; "."
 3730 GOTO 880
 3740 IF D2 <> 0 THEN 3770
-3750 PRINT "Headquarters is deserted, "; N$; "."
+3750 PRINT "Headquarters is destroyed, "; N$; "."
 3760 GOTO 880
 3770 IF SQR((S1 - S3) ^ 2 + (S2 - S4) ^ 2) <= 2 AND D < 51 THEN 3800
 3780 PRINT "Unable to comply with docking orders, "; N$; "."
@@ -539,7 +596,7 @@ IF SubStatusCheck(5,12) = 0 THEN 880
 4030 IF D3 <> 0 THEN 4060
 4040 PRINT "No ships in range, "; N$; "."
 4050 GOTO 880
-4060 PRINT "There are "; D3; "ships in range, "; N$; "."
+4060 PRINT "There are "; D3; " ships in range, "; N$; "."
 4070 COLOR 10: PRINT "How many men are going, "; N$;
 4080 INPUT Q1: COLOR 15
 4090 IF C - Q1 >= 10 THEN 4120
@@ -567,12 +624,12 @@ IF SubStatusCheck(5,12) = 0 THEN 880
 4310 NEXT X
 4320 IF D4 = 0 THEN 4360
 4330 PRINT "A sea monster smells the men on the way back!"
-4340 PRINT D7; "men were eaten, "; N$; "!"
+4340 PRINT D7; " men were eaten, "; N$; "!"
 4350 C = C - D7
-4360 PRINT D6; "men were lost through accidents, "; N$; "."
+4360 PRINT D6; " men were lost through accidents, "; N$; "."
 4370 C = C - D6
 4380 P = P - INT(10 * Q1 + RND(1) * 10)
-4390 GOTO 3690
+4390 GOTO 4690
 
 4400 REM *** #8: POWER CONVERTER ***
 4410 IF DM(9) >= 0 THEN 4440
