@@ -226,52 +226,103 @@ Q1 = 1
 
 ' Move loop
 1240 FOR X2 = 1 TO INT(INT(P1 / 100 + .5) * D1 + .5)
-1250 IF X + X1 > 0 AND X + X1 < 21 AND Y + Y1 > 0 AND Y + Y1 < 21 THEN 1280
-1260 PRINT "You can't leave the area, "; N$; "!"
-1270 GOTO 1340
-1280 ON A(X + X1, Y + Y1) + 1 GOTO 1290, 1330, 1630, 1390, 1440, 1470, 1490
-1290 X = X + X1
-1300 Y = Y + Y1
-1310 P = P - 100
-1320 GOTO 1520
-1330 PRINT "You almost ran aground, "; N$; "!"
-1340 A(X, Y) = 2
-1350 A(S1, S2) = 0
-1360 S1 = X
-1370 S2 = Y
-1380 GOTO 4690
-1390 IF D > 50 THEN 1290
-1400 PRINT "You rammed a ship!  You're both sunk, "; N$; "!"
-1410 S = S - 1
-1420 IF S = 0 THEN CALL SubWin
-1430 CALL SubLose
-1440 IF D > 50 THEN 1290
-1450 PRINT "You rammed your headquarters!  You're sunk!"
-1460 CALL SubLose
-1470 PRINT "You've been blown up by a mine, "; N$; "!"
-1480 CALL SubLose
-1490 IF RND(1) < .21 THEN 1630
+IF X + X1 <= 0 OR X + X1 >= 21 OR Y + Y1 <= 0 OR Y + Y1 >= 21 THEN
+	PRINT "You can't leave the area, "; N$; "!"
+	GOTO 1640
+END IF
 
-1500 PRINT "You were eaten by a sea monster, "; N$; "!"
-1510 CALL SubLose
+'debug
+PRINT A(X+X1, Y+Y1);
+
+'check content of new location
+SELECT CASE A(X+X1, Y+Y1)
+	CASE 0  'empty square
+		BEEP
+	CASE 1  'island
+		PRINT "You almost ran aground, "; N$; "!"
+		GOTO 1640
+	CASE 2  'you
+
+	CASE 3  'ship
+		IF D <= 50 THEN
+			PRINT "You rammed a ship!  You're both sunk, "; N$; "!"
+			S = S - 1
+			IF S = 0 THEN CALL SubWin
+			CALL SubLose
+		END IF
+
+	CASE 4   'HQ
+		IF D <= 50 THEN
+			PRINT "You rammed your headquarters!  You're sunk!"
+			CALL SubLose
+		END IF
+
+	CASE 5  'mine
+		PRINT "You've been blown up by a mine, "; N$; "!"
+		CALL SubLose
+	CASE 6  'sea monster
+		IF RND(1) >= .21 THEN
+			PRINT "You were eaten by a sea monster, "; N$; "!"
+			CALL SubLose
+		END IF
+
+END SELECT
+
+'1280 ON A(X + X1, Y + Y1) + 1 GOTO 1290, 1330, 1630, 1390, 1440, 1470, 1490
+'1290 X = X + X1
+'1300 Y = Y + Y1
+'1310 P = P - 100
+'1320 GOTO 1520
+'1330 PRINT "You almost ran aground, "; N$; "!"
+'1340 A(X, Y) = 2
+'1350 A(S1, S2) = 0
+'1360 S1 = X
+'1370 S2 = Y
+'1380 GOTO 4690
+'1390 IF D > 50 THEN 1290
+'1400 PRINT "You rammed a ship!  You're both sunk, "; N$; "!"
+'1410 S = S - 1
+'1420 IF S = 0 THEN CALL SubWin
+'1430 CALL SubLose
+'1440 IF D > 50 THEN 1290
+'1450 PRINT "You rammed your headquarters!  You're sunk!"
+'1460 CALL SubLose
+'1470 PRINT "You've been blown up by a mine, "; N$; "!"
+'1480 CALL SubLose
+'1490 IF RND(1) < .21 THEN 1630
+'1500 PRINT "You were eaten by a sea monster, "; N$; "!"
+'1510 CALL SubLose
+
+'complete the move step
+X = X + X1
+Y = Y + Y1
+P = P - 100
 
 1520 REM *** CHECK FOR NEARBY SEA MONSTERS 6 ***
 1530 FOR X3 = X - 2 TO X + 2
 1540 FOR Y3 = Y - 2 TO Y + 2
-1550 IF X3 < 1 OR X3 > 20 OR Y3 < 1 OR Y3 > 20 THEN 1610
-1560 IF A(X, Y) <> 6 THEN 1610
-1570 IF RND(1) < .25 THEN 1500
-1580 IF Q1 = 0 THEN 1610
-1590 PRINT "You just had a narrow escape with a sea monster, "; N$; "!"
-1600 Q1 = 0
+
+IF X3>=0 AND X3<=19 AND Y3>=0 AND Y3 <=19 AND A(X,Y)= 6 THEN
+	IF RND(1) < .25 THEN PRINT "You were eaten by a sea monster, "; N$; "!" : CALL SubLose
+	IF Q1 = 1 THEN PRINT "You just had a narrow escape with a sea monster, "; N$; "!" : Q1 = 0
+END IF
+
 1610 NEXT Y3
 1620 NEXT X3
 
-1630 NEXT X2
+1630 NEXT X2  'move loop
 
 1640 PRINT "Navigation complete.  Power left: "; P
 CALL SubFuel
-1650 GOTO 1340
+'complete the move
+A(X, Y) = 2
+A(S1, S2) = 0
+S1 = X
+S2 = Y
+GOTO 4690
+
+'1650 GOTO 1340
+
 
 
 1680 REM *** #1: SONAR ***
@@ -374,17 +425,14 @@ X2MAX = INT(7 + 5 * (-(D > 50)) - RND(1) * 4 + .5)
 X2=1
 DO
 
-'2390 FOR X2 = 1 TO INT(7 + 5 * (-(D > 50)) - RND(1) * 4 + .5)
+'debug
+'PRINT X,Y,X1,Y1,A(X + X1, Y + Y1),X2MAX
 
-PRINT X,Y,X1,Y1,A(X + X1, Y + Y1),X2MAX
 IF X + X1 <= 0 OR X + X1 >= 20 OR Y + Y1 <= 0 OR Y + Y1 >= 20 THEN
 	PRINT "Torpedo out of sonar range... ineffectual, "; N$; "."
 	X2MAX=99
 	EXIT DO
 END IF
-
-'2400 IF X + X1 > 0 AND X + X1 < 21 AND Y + Y1 > 0 AND Y + Y1 < 21 THEN 2460
-'2410 PRINT "Torpedo out of sonar range... ineffectual, "; N$; "."
 
 SELECT CASE A(X + X1, Y + Y1)
 CASE 0
@@ -419,28 +467,6 @@ CASE 6
 	X2MAX=99
 
 END SELECT
-
-'2460 ON A(X + X1, Y + Y1) + 1 GOTO 2470, 2510, 2650, 2540, 2580, 2610, 2630
-'2470 X = X + X1
-'2480 Y = Y + Y1
-'2490 PRINT "..!..";
-'CALL SubWait(1)
-'BEEP
-'2500 GOTO 2650
-'2510 PRINT "You took out some island, "; N$; "!"
-'2520 A(X + X1, Y + Y1) = 0
-'2530 GOTO 2420
-'2540 PRINT "Ouch!  You got one, "; N$; "!"
-'2550 S = S - 1
-'2560 IF S <> 0 THEN 2520
-'2570 CALL SubWin
-'2580 PRINT "You blew up your headquarters, "; N$; "!"
-'2590 S3 = 0: S4 = 0: D2 = 0
-'2600 GOTO 2520
-'2610 PRINT "Blam!  Shot wasted on a mine, "; N$; "!"
-'2620 GOTO 2520
-'2630 PRINT "A sea monster had a torpedo for lunch, "; N$; "!"
-'2640 GOTO 2420
 
 X2=X2+1
 LOOP UNTIL X2>X2MAX OR X2MAX = 99
@@ -521,18 +547,12 @@ IF SubStatusCheck(5,12) = 0 THEN 880
 3360 CALL SubLose
 3370 P = P - INT(ABS((D - D1) / 2 + .5))
 3380 PRINT "Maneuver complete.  Power loss: "; INT(ABS((D - D1) / 2 + .5))
+CALL SubFuel
 3390 D = D1
 3400 GOTO 4690
 
 3410 REM *** #5: STATUS / DAMAGE REPORT ***
 IF SubStatusCheck(1,3) = 0 THEN 880
-
-'3420 IF DM(6) >= 0 THEN 3450
-'3430 PRINT "No reports are able to get through, "; N$; "."
-'3440 GOTO 880
-'3450 IF C > 3 THEN 3480
-'3460 PRINT "No one left to give the report, "; N$; "."
-'3470 GOTO 880
 
 3480 PRINT: COLOR 11
 3485 PRINT "# of enemy ships left ......."; S
@@ -884,7 +904,7 @@ WL=2
 END
 END SUB 'Win
 
-
+'Direction data
 6090 DATA -1,0,-1,1,0,1,1,1,1,0,1,-1,0,-1,-1,-1
 
 6290 REM *** ISLAND DATA ***
