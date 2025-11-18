@@ -31,7 +31,7 @@ REM   The real name of this program is, "Underwater Pie Lob"
 REM *** PROGRAM FOLLOWS ***
 REM ***
 
-DIM SHARED A(20, 20), DM(9), B(5)
+DIM SHARED A(20, 20), DM(9), B(5), DM$(9)
 DIM SHARED C1,I,J,X,Y,S,S1,S2,S3,S4,X1,X2,Y1,Y2 AS INTEGER
 
 
@@ -110,6 +110,12 @@ FOR X = 1 TO 4
 	NEXT Y
 NEXT X
 
+REM Device Names
+RESTORE 3600
+FOR X = 1 TO 9
+READ DM$(X)
+NEXT X
+
 REM *** SET STARTING VALUES ***
 FOR I = 1 TO 9
 	DM(I) = 0
@@ -120,7 +126,7 @@ P = 6000
 F = 2500
 T = 10
 M = 3
-D = 1000
+D = 100
 D2 = 2
 
 
@@ -181,6 +187,10 @@ IF DM(SC%) < 0 THEN
 	CASE 6
 		PRINT "No reports are able to get through, "; N$; "."
 	CASE 7
+		PRINT "Headquarters is damaged and unable to help, "; N$; "."
+	CASE 8
+		PRINT "Hatches are inaccessible, "; N$; ".  No sabotage possible."
+	CASE 9
 	END SELECT
 END IF
 
@@ -200,6 +210,9 @@ IF C <= CR% THEN
 	CASE 6
 		PRINT "No one left to give the report, "; N$; "."
 	CASE 7
+	CASE 8
+		PRINT "Not enough crew to go on a mission, "; N$; "."
+	CASE 9
 	END SELECT
 END IF
 
@@ -268,31 +281,6 @@ SELECT CASE A(X+X1, Y+Y1)
 
 END SELECT
 
-'1280 ON A(X + X1, Y + Y1) + 1 GOTO 1290, 1330, 1630, 1390, 1440, 1470, 1490
-'1290 X = X + X1
-'1300 Y = Y + Y1
-'1310 P = P - 100
-'1320 GOTO 1520
-'1330 PRINT "You almost ran aground, "; N$; "!"
-'1340 A(X, Y) = 2
-'1350 A(S1, S2) = 0
-'1360 S1 = X
-'1370 S2 = Y
-'1380 GOTO 4690
-'1390 IF D > 50 THEN 1290
-'1400 PRINT "You rammed a ship!  You're both sunk, "; N$; "!"
-'1410 S = S - 1
-'1420 IF S = 0 THEN CALL SubWin
-'1430 CALL SubLose
-'1440 IF D > 50 THEN 1290
-'1450 PRINT "You rammed your headquarters!  You're sunk!"
-'1460 CALL SubLose
-'1470 PRINT "You've been blown up by a mine, "; N$; "!"
-'1480 CALL SubLose
-'1490 IF RND(1) < .21 THEN 1630
-'1500 PRINT "You were eaten by a sea monster, "; N$; "!"
-'1510 CALL SubLose
-
 'complete the move step
 X = X + X1
 Y = Y + Y1
@@ -321,9 +309,6 @@ S1 = X
 S2 = Y
 GOTO 4690
 
-'1650 GOTO 1340
-
-
 
 1680 REM *** #1: SONAR ***
 IF SubStatusCheck(2,5) = 0 THEN 880
@@ -331,9 +316,9 @@ IF SubStatusCheck(2,5) = 0 THEN 880
 CALL SubMap
 CALL SubShipDir
 
-1980 P = P - 100
+P = P - 100
 CALL SubFuel
-1990 GOTO 880
+GOTO 880
 
 SUB SubFuel
 IF P <= 0 THEN
@@ -552,7 +537,7 @@ CALL SubFuel
 3400 GOTO 4690
 
 3410 REM *** #5: STATUS / DAMAGE REPORT ***
-IF SubStatusCheck(1,3) = 0 THEN 880
+IF SubStatusCheck(6,3) = 0 THEN 880
 
 3480 PRINT: COLOR 11
 3485 PRINT "# of enemy ships left ......."; S
@@ -566,12 +551,9 @@ IF SubStatusCheck(1,3) = 0 THEN 880
 
 3585 PRINT "   Item         Damage  (+ Good, 0 Neutral, - Bad)"
 3590 PRINT "   ----         ------"
-3600 DATA "Engines","Sonar","Torpedos","Missiles","Maneuvering"
-3610 DATA "Status","Headquarters","Sabotage","Converter"
-3620 RESTORE 3600
+
 3630 COLOR 11: FOR X = 1 TO 9
-3640 READ A$
-3650 PRINT A$, DM(X)
+3650 PRINT DM$(X), DM(X)
 3660 NEXT X: COLOR 15
 3670 S1$ = STR$(S1): S1$ = RIGHT$(S1$, LEN(S1$) - 1)
 3671 S2$ = STR$(S2): S2$ = RIGHT$(S2$, LEN(S2$) - 1)
@@ -580,48 +562,48 @@ IF SubStatusCheck(1,3) = 0 THEN 880
 3690 GOTO 880
 
 3700 REM *** #6: HEADQUARTERS ***
-3710 IF DM(7) >= 0 THEN 3740
-3720 PRINT "Headquarters is damaged and unable to help, "; N$; "."
-3730 GOTO 880
-3740 IF D2 <> 0 THEN 3770
-3750 PRINT "Headquarters is destroyed, "; N$; "."
-3760 GOTO 880
-3770 IF SQR((S1 - S3) ^ 2 + (S2 - S4) ^ 2) <= 2 AND D < 51 THEN 3800
-3780 PRINT "Unable to comply with docking orders, "; N$; "."
-3790 GOTO 880
-3800 PRINT "Divers from headquarters bring out supplies and men."
-3810 P = 4000
-3820 T = 8
-3830 M = 2
-3840 F = 1500
-3850 C = 25
-3860 D2 = D2 - 1
-3870 GOTO 4690
+IF SubStatusCheck(7,-99)=0 THEN 880
+
+IF D2 = 0 THEN PRINT "Headquarters is destroyed, "; N$; "." : GOTO 880
+
+'are we there yet
+IF SQR((S1 - S3) ^ 2 + (S2 - S4) ^ 2) > 2 OR D >= 51 THEN
+	PRINT "Unable to comply with docking orders, too deep or far away, "; N$; "."
+	GOTO 880
+END IF
+
+PRINT "Divers from headquarters bring out supplies and men."
+P = 4000
+T = 8
+M = 2
+F = 1500
+C = 25
+D2 = D2 - 1
+GOTO 4690
 
 3880 REM *** #7: SABOTAGE ***
-3890 IF DM(8) >= 0 THEN 3920
-3900 PRINT "Hatches are inaccessible, "; N$; ".  No sabotage possible."
-3910 GOTO 880
-3920 IF C > 10 THEN 3950
-3930 PRINT "Not enough crew to go on a mission, "; N$; "."
-3940 GOTO 880
-3950 D3 = 0: D4 = 0
-3960 FOR X = S1 - 2 TO S1 + 2
-3970 FOR Y = S2 - 2 TO S2 + 2
+IF SubStatusCheck(8,10)=0 THEN 880
+
+D3 = 0: D4 = 0
+FOR X = S1 - 2 TO S1 + 2
+FOR Y = S2 - 2 TO S2 + 2
 3980 IF X < 1 OR X > 20 OR Y < 1 OR Y > 20 THEN 4010
 3990 D3 = D3 - (A(X, Y) = 3)
 4000 D4 = D4 - (A(X, Y) = 6)
 4010 NEXT Y
 4020 NEXT X
+
 4030 IF D3 <> 0 THEN 4060
 4040 PRINT "No ships in range, "; N$; "."
 4050 GOTO 880
+
 4060 PRINT "There are "; D3; " ships in range, "; N$; "."
 4070 COLOR 10: PRINT "How many men are going, "; N$;
 4080 INPUT Q1: COLOR 15
 4090 IF C - Q1 >= 10 THEN 4120
 4100 PRINT "You must leave at least 10 men on board, "; N$; "."
 4110 GOTO 4070
+
 4120 D5 = INT(D3 / Q1 + .5)
 4130 D6 = 0
 4140 FOR X = S1 - 2 TO S1 + 2
@@ -634,14 +616,17 @@ IF SubStatusCheck(1,3) = 0 THEN 880
 4210 IF S = 0 THEN CALL SubWin
 4220 NEXT Y
 4230 NEXT X
+
 4240 PRINT D6; " ships were destroyed, "; N$; "."
 4250 D6 = 0: D7 = 0
 4260 FOR X = 1 TO Q1
 4270 D7 = D7 - (RND(1) > .6)
 4280 NEXT X
+
 4290 FOR X = 1 TO Q1 - D7
 4300 D6 = D6 - (RND(1) < .15)
 4310 NEXT X
+
 4320 IF D4 = 0 THEN 4360
 4330 PRINT "A sea monster smells the men on the way back!"
 4340 PRINT D7; " men were eaten, "; N$; "!"
@@ -677,6 +662,7 @@ IF SubStatusCheck(1,3) = 0 THEN 880
 4610 IF C1 > P - 1 OR C1 < 0 THEN 4590
 4620 P = P - C1
 4630 F = F + INT(C1 * 3)
+
 4640 PRINT "Conversion complete.  Power ="; P; " Fuel ="; F
 4650 GOTO 4690
 
@@ -748,6 +734,7 @@ IF SubStatusCheck(1,3) = 0 THEN 880
 
 5260 REM *** MOVE SHIPS / SEA MONSTERS ***
 5270 PRINT: PRINT "---*** Result of Last Enemy Maneuver **---"
+'check whole map for ships
 5280 FOR X = 1 TO 20
 5290 FOR Y = 1 TO 20
 5300 IF A(X, Y) <> 3 THEN 5690
@@ -765,10 +752,12 @@ IF SubStatusCheck(1,3) = 0 THEN 880
 5410 STOP
 
 5420 ON A(X + W, Y + V) + 1 GOTO 5430, 5460, 5530, 5460, 5560, 5600, 5650
+'empty space 0
 5430 A(X + W, Y + V) = 3
 5440 A(X, Y) = 0
 5450 GOTO 6000
 
+'island 1
 5460 REM *** CHANGE DIRECTION ***
 5470 RESTORE 6090
 5480 FOR X0 = 1 TO INT(RND(1) * 8) + 1
@@ -777,26 +766,31 @@ IF SubStatusCheck(1,3) = 0 THEN 880
 5510 IF X + W < 1 OR X + W > 20 OR Y + V < 1 OR Y + V > 20 THEN 5470
 5520 GOTO 5420
 
+'sub 2
 5530 IF D > 50 THEN 5460
 5540 COLOR 12: PRINT "*** You've been rammed by a ship, "; N$; "!": COLOR 15
 5550 CALL SubLose
 
+' HQ 3
 5560 IF RND(1) < .15 THEN 5460
 5570 COLOR 12: PRINT "*** Your headquarters was rammed, "; N$; "!": COLOR 15
 5580 S3 = 0: S4 = 0: D2 = 0: A(X + W, Y + V) = 0
 5590 GOTO 5620
 
+' mine 4
 5600 IF RND(1) < .7 THEN 5460
 5610 COLOR 12: PRINT "*** Ship destroyed by a mine, "; N$; "!": COLOR 15
 5620 S = S - 1
 5630 IF S <> 0 THEN 5440
 5640 CALL SubWin
 
+' seas monster 5
 5650 IF RND(1) < .8 THEN 5460
 5660 COLOR 12: PRINT "*** Ship eaten by a sea monster, "; N$; "!": COLOR 15
 5670 S = S - 1
 5680 GOTO 5630
 
+'check map for sea monsters
 5690 REM *** MOVE A SEA MONSTER ***
 5700 IF A(X, Y) <> 6 THEN 6000
 5710 IF X + M1 < 1 OR X + M1 > 20 OR Y + M2 < 1 OR Y + M2 > 20 THEN 5760
@@ -839,10 +833,13 @@ IF SubStatusCheck(1,3) = 0 THEN 880
 6010 NEXT X
 
 6020 REM *** MAKE REPAIRS ***
+PRINT "Repairing ";
 6030 FOR Y = 1 TO 9
 6040 X = INT(RND(1) * 9) + 1
 6050 DM(X) = DM(X) + (RND(1) * (2 + RND(1) * 2)) * (1 + (-(D < 51) OR -(D > 2000))) * (-(DM(X) < 3))
+PRINT ".";
 6060 NEXT Y
+PRINT
 6070 GOTO 880
 
 
@@ -903,6 +900,10 @@ PRINT "Promotions and commendations will be given immediately!"
 WL=2
 END
 END SUB 'Win
+
+'Device name data
+3600 DATA "Engines","Sonar","Torpedos","Missiles","Maneuvering"
+3610 DATA "Status","Headquarters","Sabotage","Converter"
 
 'Direction data
 6090 DATA -1,0,-1,1,0,1,1,1,1,0,1,-1,0,-1,-1,-1
