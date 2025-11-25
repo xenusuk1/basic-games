@@ -32,7 +32,7 @@ REM *** PROGRAM FOLLOWS ***
 REM ***
 
 DIM SHARED A(20, 20), DM(9), B(5), DM$(9)
-DIM SHARED C1,I,J,X,Y,S,S1,S2,S3,S4,X1,X2,Y1,Y2 AS INTEGER
+DIM SHARED C1,I,J,X,Y,S,S1,S2,S3,S4,X1,X2,Y1,Y2,P1 AS INTEGER
 
 
 
@@ -139,7 +139,7 @@ SELECT CASE O
 	CASE 0
 	 GOTO 1040
 	CASE 1
-	 GOTO 1680
+		CALL SubSonar
 	CASE 2
 	 GOTO 2220
 	CASE 3
@@ -221,12 +221,12 @@ END FUNCTION  'subStatusCheck
 1040 REM *** #0: NAVIGATION ***
 IF SubStatusCheck(1,8)=0 THEN 880
 
-1110 D1 = 1 - ((.23 + RND(1) / 10) * (-(D <= 50)))
-'1120
+D1 = 1 - ((.23 + RND(1) / 10) * (-(D <= 50)))
+
 CALL SubCourse
 1130 PRINT "Power available ="; P;: COLOR 10: PRINT " Power to use (100/square) ";
-1140 INPUT P1: COLOR 15
-1150 IF P1 < 0 OR P1 > P THEN 1130
+INPUT P1: COLOR 15
+IF P1 < 0 OR P1 > P THEN 1130
 
 IF P1 > 1000 AND RND(1) > .43 THEN
 	PRINT "Your atomic pile went supercriticial, "; N$; "!  Headquarters will warn all"
@@ -238,22 +238,26 @@ Y = S2
 Q1 = 1
 
 ' Move loop
-1240 FOR X2 = 1 TO INT(INT(P1 / 100 + .5) * D1 + .5)
+FOR X2 = 1 TO INT(INT(P1 / 100 + .5) * D1 + .5)
+
 IF X + X1 <= 0 OR X + X1 >= 21 OR Y + Y1 <= 0 OR Y + Y1 >= 21 THEN
 	PRINT "You can't leave the area, "; N$; "!"
-	GOTO 1640
+	EXIT FOR
 END IF
 
 'debug
-PRINT A(X+X1, Y+Y1);
+PRINT X,X1,Y,Y1,A(X+X1, Y+Y1);
 
 'check content of new location
 SELECT CASE A(X+X1, Y+Y1)
 	CASE 0  'empty square
+		X = X + X1
+		Y = Y + Y1
+		P = P - 100
 		BEEP
 	CASE 1  'island
 		PRINT "You almost ran aground, "; N$; "!"
-		GOTO 1640
+
 	CASE 2  'you
 
 	CASE 3  'ship
@@ -281,44 +285,44 @@ SELECT CASE A(X+X1, Y+Y1)
 
 END SELECT
 
-'complete the move step
-X = X + X1
-Y = Y + Y1
-P = P - 100
-
-1520 REM *** CHECK FOR NEARBY SEA MONSTERS 6 ***
-1530 FOR X3 = X - 2 TO X + 2
-1540 FOR Y3 = Y - 2 TO Y + 2
+REM *** CHECK FOR NEARBY SEA MONSTERS 6 ***
+FOR X3 = X - 2 TO X + 2
+FOR Y3 = Y - 2 TO Y + 2
 
 IF X3>=0 AND X3<=19 AND Y3>=0 AND Y3 <=19 AND A(X,Y)= 6 THEN
 	IF RND(1) < .25 THEN PRINT "You were eaten by a sea monster, "; N$; "!" : CALL SubLose
 	IF Q1 = 1 THEN PRINT "You just had a narrow escape with a sea monster, "; N$; "!" : Q1 = 0
 END IF
 
-1610 NEXT Y3
-1620 NEXT X3
+NEXT Y3
+NEXT X3
 
-1630 NEXT X2  'move loop
+NEXT X2  'move loop
 
 1640 PRINT "Navigation complete.  Power left: "; P
 CALL SubFuel
 'complete the move
 A(X, Y) = 2
-A(S1, S2) = 0
-S1 = X
-S2 = Y
+IF S1<>X OR S2<>Y THEN
+	A(S1, S2) = 0
+	S1 = X
+	S2 = Y
+END IF
+
 GOTO 4690
 
 
 1680 REM *** #1: SONAR ***
-IF SubStatusCheck(2,5) = 0 THEN 880
+SUB SubSonar
+IF SubStatusCheck(2,5) = 0 THEN EXIT SUB
 
 CALL SubMap
 CALL SubShipDir
-
 P = P - 100
 CALL SubFuel
-GOTO 880
+
+END SUB 'Sonar
+
 
 SUB SubFuel
 IF P <= 0 THEN
