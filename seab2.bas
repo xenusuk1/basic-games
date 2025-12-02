@@ -113,7 +113,7 @@ NEXT X
 REM Device Names
 RESTORE 3600
 FOR X = 1 TO 9
-READ DM$(X)
+	READ DM$(X)
 NEXT X
 
 REM *** SET STARTING VALUES ***
@@ -128,45 +128,6 @@ T = 10
 M = 3
 D = 100
 D2 = 2
-
-
-'Main Loop
-880 REM *** COMMAND SECTION ***
-PRINT: COLOR 10: PRINT "What are your orders (1-9), "; N$;
-INPUT O: COLOR 15
-
-SELECT CASE O
-	CASE 0
-	 GOTO 1040
-	CASE 1
-		CALL SubSonar
-	CASE 2
-	 GOTO 2220
-	CASE 3
-	 GOTO 2680
-	CASE 4
-	 GOTO 3250
-	CAsE 5
-	 GOTO 3410
-	CASE 6
-	 GOTO 3700
-	CASE 7
-	 GOTO 3880
-	CASE 8
-	 GOTO 4400
-	CASE 9
-	 GOTO 4660
-CASE ELSE
-'ON INT(O + 1) GOTO 1040, 1680, 2220, 2680, 3250, 3410, 3700, 3880, 4400, 4660
-	PRINT "The commands are:"
-	COLOR 11: PRINT "     #0: Navigation", , "#5: Status/damage report"
-	PRINT "     #1: Sonar", , "#6: Headquarters"
-	PRINT "     #2: Torpedo control", , "#7: Sabotage"
-	PRINT "     #3: Polaris missile control", "#8: Power conversion"
-	PRINT "     #4: Maneuvering", , "#9: Surrender": COLOR 15
-END SELECT
-
-1030 GOTO 880
 
 FUNCTION SubStatusCheck (SC%, CR%) AS INTEGER
 subStatusCheck = 1
@@ -218,15 +179,61 @@ END IF
 
 END FUNCTION  'subStatusCheck
 
-1040 REM *** #0: NAVIGATION ***
-IF SubStatusCheck(1,8)=0 THEN 880
+'Main Loop
+880 REM *** COMMAND SECTION ***
+PRINT: COLOR 10: PRINT "What are your orders (1-9), "; N$;
+INPUT O: COLOR 15
+
+SELECT CASE O
+	CASE 0
+		CALL SubNavigation
+		IF SubStatusCheck(1,8)<>0 THEN 4690
+	CASE 1
+		CALL SubSonar
+	CASE 2
+		CALL SubTorpedo
+		IF SubStatusCheck(3,10) <> 0 THEN 4690
+'	 GOTO 2220
+	CASE 3
+	 GOTO 2680
+	CASE 4
+	 GOTO 3250
+	CAsE 5
+	 GOTO 3410
+	CASE 6
+	 GOTO 3700
+	CASE 7
+	 GOTO 3880
+	CASE 8
+	 GOTO 4400
+	CASE 9
+	 GOTO 4660
+CASE ELSE
+'ON INT(O + 1) GOTO 1040, 1680, 2220, 2680, 3250, 3410, 3700, 3880, 4400, 4660
+	PRINT "The commands are:"
+	COLOR 11: PRINT "     #0: Navigation", , "#5: Status/damage report"
+	PRINT "     #1: Sonar", , "#6: Headquarters"
+	PRINT "     #2: Torpedo control", , "#7: Sabotage"
+	PRINT "     #3: Polaris missile control", "#8: Power conversion"
+	PRINT "     #4: Maneuvering", , "#9: Surrender": COLOR 15
+END SELECT
+
+1030 GOTO 880
+
+
+
+SUB SubNavigation
+REM *** #0: NAVIGATION ***
+IF SubStatusCheck(1,8)=0 THEN EXIT SUB
 
 D1 = 1 - ((.23 + RND(1) / 10) * (-(D <= 50)))
 
 CALL SubCourse
-1130 PRINT "Power available ="; P;: COLOR 10: PRINT " Power to use (100/square) ";
-INPUT P1: COLOR 15
-IF P1 < 0 OR P1 > P THEN 1130
+
+DO
+	PRINT "Power available ="; P;: COLOR 10: PRINT " Power to use (100/square) ";
+	INPUT P1: COLOR 15
+LOOP UNTIL P1 >=0 OR P1<=P
 
 IF P1 > 1000 AND RND(1) > .43 THEN
 	PRINT "Your atomic pile went supercriticial, "; N$; "!  Headquarters will warn all"
@@ -308,8 +315,8 @@ IF S1<>X OR S2<>Y THEN
 	S1 = X
 	S2 = Y
 END IF
-
-GOTO 4690
+END SUB 'Navigation
+'GOTO 4690
 
 
 1680 REM *** #1: SONAR ***
@@ -372,9 +379,9 @@ FOR I = 1 TO 5
 	B(I) = 0
 NEXT I
 PRINT "Direction   # of Ships     Distances": COLOR 11
-'RESTORE 6090
+
 FOR X = 1 TO 9
-'	READ X1, Y1
+
 CALL SubDirection(X)
 	X3 = 0
 	FOR X4 = 1 TO 20
@@ -392,13 +399,13 @@ PRINT
 2200 NEXT X: COLOR 15
 END SUB  'SubShipDir
 
-
-2220 REM *** #2: TORPEDO CONTROL ***
-IF SubStatusCheck(3,10) = 0 THEN 880
+SUB SubTorpedo
+REM *** #2: TORPEDO CONTROL ***
+IF SubStatusCheck(3,10) = 0 THEN EXIT SUB
 
 IF T<=0 THEN
 	PRINT "No torpedos left, "; N$; "."
-	GOTO 880
+	EXIT SUB
 END IF
 
 IF D > 2000 AND RND(1) > .5 THEN
@@ -406,9 +413,9 @@ IF D > 2000 AND RND(1) > .5 THEN
 	CALL SubLose
 END IF
 
-2360 CALL SubCourse
-2370 X = S1
-2380 Y = S2
+CALL SubCourse
+X = S1
+Y = S2
 
 X2MAX = INT(7 + 5 * (-(D > 50)) - RND(1) * 4 + .5)
 X2=1
@@ -463,26 +470,33 @@ LOOP UNTIL X2>X2MAX OR X2MAX = 99
 
 IF X2MAX<99 THEN PRINT "Dud."
 
-2420 T = T - 1
+T = T - 1
 P = P - 150
 
 CALL SubFuel
-GOTO 4690
+END SUB 'Torpedo
+
+'GOTO 4690
 
 
 2680 REM *** #3: POLARIS MISSILE CONTROL ***
 IF SubStatusCheck(4,23) = 0 THEN 880
 
-2750 IF M <> 0 THEN 2780
-2760 PRINT "No missiles left, "; N$; "."
-2770 GOTO 880
-2780 IF D > 50 AND D < 2000 THEN 2850
-2790 PRINT "I recommend that you do not fire at this depth!  ";: COLOR 10: PRINT "Proceed (Y/N)";
-2800 INPUT A$: COLOR 15
-2810 IF LEFT$(A$, 1) = "N" OR LEFT$(A$, 1) = "n" THEN 880
-2820 IF RND(1) < .5 THEN 2850
-2830 PRINT "The missile explodes upon firing, "; N$; "!  You're dead!"
-2840 CALL SubLose
+IF M <=0 THEN
+	PRINT "No missiles left, "; N$; "."
+	GOTO 880
+END IF
+
+IF D <= 50 OR D >= 2000 THEN
+	PRINT "I recommend that you do not fire at this depth!  ";: COLOR 10: PRINT "Proceed (Y/N)";
+	INPUT A$: COLOR 15
+	IF UCASE$(LEFT$(A$, 1)) = "N" THEN 880
+	IF RND(1) >= .5 THEN
+		PRINT "The missile explodes upon firing, "; N$; "!  You're dead!"
+		CALL SubLose
+	END IF
+END IF
+
 2850 CALL SubCourse
 2860 COLOR 10: PRINT "How much fuel (lbs.)";
 2870 INPUT F1: COLOR 15
@@ -529,41 +543,43 @@ CALL SubFuel
 3250 REM *** MANUEVERING ***
 IF SubStatusCheck(5,12) = 0 THEN 880
 
-3320 COLOR 10: PRINT "New depth";
-3330 INPUT D1: COLOR 15
-3340 IF D1 >= 0 AND D1 < 3000 THEN 3370
-3350 PRINT "Hull crushed by pressure, "; N$; "!"
-3360 CALL SubLose
+COLOR 10: PRINT "New depth";
+INPUT D1: COLOR 15
+IF D1 >= 0 AND D1 < 3000 THEN 3370
+PRINT "Hull crushed by pressure, "; N$; "!"
+CALL SubLose
 3370 P = P - INT(ABS((D - D1) / 2 + .5))
-3380 PRINT "Maneuver complete.  Power loss: "; INT(ABS((D - D1) / 2 + .5))
+PRINT "Maneuver complete.  Power loss: "; INT(ABS((D - D1) / 2 + .5))
 CALL SubFuel
-3390 D = D1
-3400 GOTO 4690
+D = D1
+GOTO 4690
 
 3410 REM *** #5: STATUS / DAMAGE REPORT ***
 IF SubStatusCheck(6,3) = 0 THEN 880
 
-3480 PRINT: COLOR 11
-3485 PRINT "# of enemy ships left ......."; S
-3490 PRINT "# of power units left ......."; P
-3500 PRINT "# of torpedos left .........."; T
-3510 PRINT "# of missiles left .........."; M
-3520 PRINT "# of crewmen left ..........."; C
-3530 PRINT "Lbs. of fuel left ..........."; F
-     PRINT "Depth ......................."; D
-3540 PRINT
+PRINT: COLOR 11
+PRINT "# of enemy ships left ......."; S
+PRINT "# of power units left ......."; P
+PRINT "# of torpedos left .........."; T
+PRINT "# of missiles left .........."; M
+PRINT "# of crewmen left ..........."; C
+PRINT "Lbs. of fuel left ..........."; F
+PRINT "Depth ......................."; D
+PRINT
 
-3585 PRINT "   Item         Damage  (+ Good, 0 Neutral, - Bad)"
-3590 PRINT "   ----         ------"
+PRINT "   Item         Damage  (+ Good, 0 Neutral, - Bad)"
+PRINT "   ----         ------"
 
-3630 COLOR 11: FOR X = 1 TO 9
-3650 PRINT DM$(X), DM(X)
-3660 NEXT X: COLOR 15
-3670 S1$ = STR$(S1): S1$ = RIGHT$(S1$, LEN(S1$) - 1)
-3671 S2$ = STR$(S2): S2$ = RIGHT$(S2$, LEN(S2$) - 1)
-3675 PRINT "You are at location ("; S1$; ", "; S2$; ")."
-3680 PRINT
-3690 GOTO 880
+COLOR 11
+FOR X = 1 TO 9
+	PRINT DM$(X), DM(X)
+NEXT X
+COLOR 15
+S1$ = STR$(S1): S1$ = RIGHT$(S1$, LEN(S1$) - 1)
+S2$ = STR$(S2): S2$ = RIGHT$(S2$, LEN(S2$) - 1)
+PRINT "You are at location ("; S1$; ", "; S2$; ")."
+PRINT
+GOTO 880
 
 3700 REM *** #6: HEADQUARTERS ***
 IF SubStatusCheck(7,-99)=0 THEN 880
