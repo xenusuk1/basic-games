@@ -181,7 +181,7 @@ END FUNCTION  'subStatusCheck
 
 'Main Loop
 880 REM *** COMMAND SECTION ***
-PRINT: COLOR 10: PRINT "What are your orders (1-9), "; N$;
+PRINT: COLOR 10: PRINT "What are your orders (0-9), "; N$;
 INPUT O: COLOR 15
 
 SELECT CASE O
@@ -197,9 +197,12 @@ SELECT CASE O
 	CASE 3
 	 GOTO 2680
 	CASE 4
-	 GOTO 3250
+		CALL SubManoevre
+		IF SubStatusCheck(5,12) > 0 THEN 4690
+'	 GOTO 3250
 	CAsE 5
-	 GOTO 3410
+		CALL SubStatus
+	 'GOTO 3410
 	CASE 6
 	 GOTO 3700
 	CASE 7
@@ -316,8 +319,6 @@ IF S1<>X OR S2<>Y THEN
 	S2 = Y
 END IF
 END SUB 'Navigation
-'GOTO 4690
-
 
 1680 REM *** #1: SONAR ***
 SUB SubSonar
@@ -476,7 +477,6 @@ P = P - 150
 CALL SubFuel
 END SUB 'Torpedo
 
-'GOTO 4690
 
 
 2680 REM *** #3: POLARIS MISSILE CONTROL ***
@@ -490,72 +490,85 @@ END IF
 IF D <= 50 OR D >= 2000 THEN
 	PRINT "I recommend that you do not fire at this depth!  ";: COLOR 10: PRINT "Proceed (Y/N)";
 	INPUT A$: COLOR 15
-	IF UCASE$(LEFT$(A$, 1)) = "N" THEN 880
-	IF RND(1) >= .5 THEN
-		PRINT "The missile explodes upon firing, "; N$; "!  You're dead!"
-		CALL SubLose
+	IF UCASE$(LEFT$(A$, 1)) = "Y" THEN
+		IF RND(1) > .5 THEN
+			PRINT "The missile explodes upon firing, "; N$; "!  You're dead!"
+			CALL SubLose
+		END IF
+	ELSE GOTO 880
 	END IF
 END IF
 
-2850 CALL SubCourse
-2860 COLOR 10: PRINT "How much fuel (lbs.)";
-2870 INPUT F1: COLOR 15
-2880 IF F1 > 0 AND F1 <= F THEN 2910
-2890 PRINT "You have"; F; "lbs. of fuel left, "; N$; "."
-2900 GOTO 2860
-2910 F2 = INT(F1 / 75 + .5)
-2920 IF S1 + X1 * F2 > 0 AND S1 + X1 * F2 < 21 AND S2 + Y1 * F2 > 0 AND S2 + Y1 * F2 < 21 THEN 2980
-2930 PRINT "Missile out of sonar tracking, "; N$; ".  Missile lost."
-2940 M = M - 1
-2950 F = F - F1
-2960 P = P - 300
-CALL SubFuel
-2970 GOTO 4690
+CALL SubCourse
 
-2980 D3 = 0: D4 = 0: D5 = 0: D6 = 0
-2990 FOR X = S1 + X1 * F2 - 1 TO S1 + X1 * F2 + 1
-3000 FOR Y = S2 + Y1 * F2 - 1 TO S2 + Y1 * F2 + 1
-3010 IF X < 1 OR X > 20 OR Y < 1 OR Y > 20 THEN 3140
-3020 D3 = D3 - (A(X, Y) = 3)
-3030 D4 = D4 - (A(X, Y) = 6)
-3040 D5 = D5 - (A(X, Y) = 5)
-3050 D6 = D6 - (A(X, Y) = 1)
-3060 IF A(X, Y) <> 4 THEN 3100
-3070 PRINT "You've destroyed your headquarters, "; N$; "!"
-3080 D3 = 0: S4 = 0: D2 = 0
-3090 GOTO 3130
-3100 IF A(X, Y) <> 2 THEN 3130
-3110 PRINT "You just destroyed yourself, "; N$; "!  Dummy!"
-3120 CALL SubLose
-3130 A(X, Y) = 0
+DO
+	COLOR 10: PRINT "How much fuel (lbs.)";
+	INPUT F1: COLOR 15
+LOOP UNTIL F1 > 0 AND F1 <= F
+
+PRINT "You have"; F; "lbs. of fuel left, "; N$; "."
+
+F2 = INT(F1 / 75 + .5)
+IF S1 + X1 * F2 <= 0 OR S1 + X1 * F2 >= 21 OR S2 + Y1 * F2 <= 0 OR S2 + Y1 * F2 >= 21 THEN
+	PRINT "Missile out of sonar tracking, "; N$; ".  Missile lost."
+ELSE
+
+	D3 = 0: D4 = 0: D5 = 0: D6 = 0
+	FOR X = S1 + X1 * F2 - 1 TO S1 + X1 * F2 + 1
+	FOR Y = S2 + Y1 * F2 - 1 TO S2 + Y1 * F2 + 1
+		IF X < 1 OR X > 20 OR Y < 1 OR Y > 20 THEN 3140
+	D3 = D3 - (A(X, Y) = 3)
+	D4 = D4 - (A(X, Y) = 6)
+	D5 = D5 - (A(X, Y) = 5)
+	D6 = D6 - (A(X, Y) = 1)
+
+IF A(X, Y) = 4 THEN
+	PRINT "You've destroyed your headquarters, "; N$; "!"
+	D3 = 0: S4 = 0: D2 = 0
+END IF
+IF A(X, Y) = 2 THEN
+	PRINT "You just destroyed yourself, "; N$; "!  Dummy!"
+	CALL SubLose
+END IF
+A(X, Y) = 0
 3140 NEXT Y
 3150 NEXT X
-3160 IF D6 = 0 THEN 3180
-3170 PRINT "You blew up some island, "; N$; "."
-3180 IF D5 = 0 THEN 3200
-3190 PRINT "You destroyed "; D5; "mines, "; N$; "."
-3200 IF D4 = 0 THEN 3220
-3210 PRINT "You got "; D4; "sea monsters, "; N$; "!  Good work!"
-3220 PRINT "You destroyed "; D3; "enemy ships, "; N$; "!"
-3230 S = S - D3
-3240 GOTO 2940
 
-3250 REM *** MANUEVERING ***
-IF SubStatusCheck(5,12) = 0 THEN 880
+IF D6 > 0 THEN PRINT "You blew up some island, "; N$; "."
+IF D5 > 0 THEN PRINT "You destroyed "; D5; " mines, "; N$; "."
+IF D4 > 0 THEN PRINT "You got "; D4; " sea monsters, "; N$; "!  Good work!"
+PRINT "You destroyed "; D3; " enemy ships, "; N$; "!"
+S = S - D3
+
+END IF 'tracking
+M = M - 1
+F = F - F1
+P = P - 300
+CALL SubFuel
+
+GOTO 4690
+
+
+SUB SubManoevre
+REM *** MANUEVERING ***
+IF SubStatusCheck(5,12) = 0 THEN EXIT SUB
 
 COLOR 10: PRINT "New depth";
 INPUT D1: COLOR 15
-IF D1 >= 0 AND D1 < 3000 THEN 3370
-PRINT "Hull crushed by pressure, "; N$; "!"
-CALL SubLose
-3370 P = P - INT(ABS((D - D1) / 2 + .5))
+IF D1 > 3000 THEN
+	PRINT "Hull crushed by pressure, "; N$; "!"
+	CALL SubLose
+END IF
+
+P = P - INT(ABS((D - D1) / 2 + .5))
 PRINT "Maneuver complete.  Power loss: "; INT(ABS((D - D1) / 2 + .5))
 CALL SubFuel
 D = D1
-GOTO 4690
+END SUB
 
+SUB SubStatus
 3410 REM *** #5: STATUS / DAMAGE REPORT ***
-IF SubStatusCheck(6,3) = 0 THEN 880
+IF SubStatusCheck(6,3) = 0 THEN EXIT SUB
 
 PRINT: COLOR 11
 PRINT "# of enemy ships left ......."; S
@@ -579,7 +592,9 @@ S1$ = STR$(S1): S1$ = RIGHT$(S1$, LEN(S1$) - 1)
 S2$ = STR$(S2): S2$ = RIGHT$(S2$, LEN(S2$) - 1)
 PRINT "You are at location ("; S1$; ", "; S2$; ")."
 PRINT
-GOTO 880
+END SUB
+
+'GOTO 880
 
 3700 REM *** #6: HEADQUARTERS ***
 IF SubStatusCheck(7,-99)=0 THEN 880
@@ -608,16 +623,18 @@ D3 = 0: D4 = 0
 FOR X = S1 - 2 TO S1 + 2
 FOR Y = S2 - 2 TO S2 + 2
 3980 IF X < 1 OR X > 20 OR Y < 1 OR Y > 20 THEN 4010
-3990 D3 = D3 - (A(X, Y) = 3)
-4000 D4 = D4 - (A(X, Y) = 6)
+D3 = D3 - (A(X, Y) = 3)
+D4 = D4 - (A(X, Y) = 6)
 4010 NEXT Y
 4020 NEXT X
 
-4030 IF D3 <> 0 THEN 4060
-4040 PRINT "No ships in range, "; N$; "."
-4050 GOTO 880
+IF D3 = 0 THEN
+	PRINT "No ships in range, "; N$; "."
+	GOTO 880
+END IF
 
-4060 PRINT "There are "; D3; " ships in range, "; N$; "."
+PRINT "There are "; D3; " ships in range, "; N$; "."
+
 4070 COLOR 10: PRINT "How many men are going, "; N$;
 4080 INPUT Q1: COLOR 15
 4090 IF C - Q1 >= 10 THEN 4120
